@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E-Paper BLE Dashboard</title>
+    <meta name="description" content="Manage and upload images to your Gicisky Bluetooth E-Paper Display from a sleek, localized web interface.">
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'epaper/style.css' %}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="background-beams"></div>
+    <div class="app-container">
+        <aside class="sidebar glass">
+            <h2>Settings</h2>
+            <form method="post" action="{% url 'index' %}" class="settings-form">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label for="id_mac_address">Device MAC Address</label>
+                    {{ config_form.mac_address }}
+                </div>
+                <div class="form-group">
+                    <label for="id_raw_type">Hardware Raw Type</label>
+                    {{ config_form.raw_type }}
+                </div>
+                <div class="form-row">
+                    <div class="form-group row-align">
+                        {{ config_form.rotate }}
+                        <label for="id_rotate">Rotate 180°</label>
+                    </div>
+                    <div class="form-group row-align">
+                        {{ config_form.negative }}
+                        <label for="id_negative">Negative colors</label>
+                    </div>
+                </div>
+                <div class="form-group" style="padding: 1rem; border: 1px dashed var(--glass-border); border-radius: 8px;">
+                    <label>Force Advanced Override</label>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap:0.5rem; margin-bottom: 0.5rem;">
+                        {{ config_form.width_override }}
+                        {{ config_form.height_override }}
+                    </div>
+                    <div class="form-group row-align" style="margin-bottom:0.5rem;">
+                        {{ config_form.force_compression }} <label for="id_force_compression">Force Compress</label>
+                    </div>
+                    <div class="form-group row-align" style="margin-bottom:0.5rem;">
+                        {{ config_form.force_second_color }} <label for="id_force_second_color">Force BWR</label>
+                    </div>
+                    <div class="form-group row-align">
+                        {{ config_form.force_mirror }} <label for="id_force_mirror">Force Mirror</label>
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn primary">Save Config</button>
+            </form>
+            
+            {% if messages %}
+            <div class="messages">
+                {% for message in messages %}
+                <div class="toast {{ message.tags }}">{{ message }}</div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            
+            <div class="upload-section">
+                <h3>Upload New Image</h3>
+                <form method="post" action="{% url 'upload_image' %}" enctype="multipart/form-data" class="upload-form">
+                    {% csrf_token %}
+                    <div class="file-drop-area" id="dropArea">
+                        <span class="fake-btn">Choose Image</span>
+                        <span class="file-msg" id="fileMsg">or drag and drop here</span>
+                        {{ upload_form.image }}
+                    </div>
+                    <button type="submit" class="btn secondary">Upload Image or Text</button>
+                </form>
+            </div>
+
+            <div class="debug-section" style="margin-top:2rem; padding: 1rem; background:rgba(0,0,0,0.2); border-radius: 12px;">
+                <h3>Debug Console</h3>
+                <div class="form-row">
+                    <input type="text" id="debug-cmd" placeholder="e.g. 01">
+                    <button type="button" class="btn secondary" style="margin-top:0;" onclick="sendDebugCmd()">Send</button>
+                </div>
+                <div id="debug-log" style="margin-top: 1rem; font-family: monospace; font-size: 0.8rem; height: 100px; overflow-y: scroll; background: #000; padding:0.5rem; border-radius:6px; color:#10b981;">
+                    System ready.
+                </div>
+            </div>
+        </aside>
+
+        <main class="gallery-area glass">
+            <header>
+                <h1>Image Gallery</h1>
+                <p>Click any image to transfer it to your E-Paper Display</p>
+                <div id="transfer-status" class="status-badge hidden">Starting transfer...</div>
+            </header>
+            
+            <div class="gallery-grid">
+                {% for img in images %}
+                <div class="gallery-card" onclick="triggerUpdate({{ img.id }})">
+                    <div class="img-wrapper">
+                        <img src="{{ img.image.url }}" alt="Uploaded Image {{ img.id }}">
+                        <div class="overlay">
+                            <span>Upload to Display</span>
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <span>{{ img.uploaded_at|date:"M d, Y H:i" }}</span>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="empty-state">
+                    <p>No images uploaded yet.</p>
+                </div>
+                {% endfor %}
+            </div>
+        </main>
+    </div>
+
+    <script>
+        function triggerUpdate(imageId) {
+            const statusBadge = document.getElementById('transfer-status');
+            statusBadge.textContent = 'Transmitting...';
+            statusBadge.className = 'status-badge transmitting';
+            
+            fetch(`/trigger/${imageId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if(data.status === 'success') {
+                    statusBadge.textContent = 'Success!';
+                    statusBadge.className = 'status-badge success';
+                } else {
+                    statusBadge.textContent = 'Failed: ' + data.message;
+                    statusBadge.className = 'status-badge error';
+                }
+                setTimeout(() => statusBadge.className = 'status-badge hidden', 10000);
+            })
+            .catch(err => {
+                statusBadge.textContent = 'Error contacting server';
+                statusBadge.className = 'status-badge error';
+                setTimeout(() => statusBadge.className = 'status-badge hidden', 10000);
+            });
+        }
+
+        function logDebug(msg) {
+            const logger = document.getElementById('debug-log');
+            const time = new Date().toISOString().split('T')[1].split('.')[0];
+            logger.innerHTML += `<br>[${time}] ${msg}`;
+            logger.scrollTop = logger.scrollHeight;
+        }
+
+        function sendDebugCmd() {
+            const cmd = document.getElementById('debug-cmd').value;
+            if(!cmd) return;
+            logDebug(`-> Sending: ${cmd}`);
+            fetch('/send-cmd/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: JSON.stringify({cmd: cmd})
+            })
+            .then(res => res.json())
+            .then(data => {
+                logDebug(`<- ${data.status.toUpperCase()}: ${data.message}`);
+            })
+            .catch(err => logDebug(`<- ERROR: ${err}`));
+        }
+
+        const fileInput = document.querySelector('.file-input');
+        const fileMsg = document.getElementById('fileMsg');
+        fileInput.addEventListener('change', function() {
+            if(this.files && this.files.length > 0) {
+                fileMsg.textContent = this.files[0].name;
+            } else {
+                fileMsg.textContent = 'or drag and drop here';
+            }
+        });
+    </script>
+</body>
+</html>
