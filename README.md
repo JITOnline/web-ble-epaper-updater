@@ -103,14 +103,23 @@ Before deploying, ensure Bluetooth is enabled and the necessary system packages 
 
 1. Open `dietpi-config`.
 2. Navigate to **Advanced Options > Bluetooth** and ensure it is turned **On**.
-3. Install required system dependencies via the terminal. This includes packages for Bluetooth (`bleak`) and image processing (`Pillow` / Django `ImageField`):
+3. Install required system dependencies via the terminal. This includes packages for Bluetooth (`bleak`, `pi-bluetooth`) and image processing (`Pillow` / Django `ImageField`):
    ```bash
    apt update
    apt install -y python3-venv python3-pip python3-dev libglib2.0-dev libdbus-1-dev \
-       libjpeg-dev zlib1g-dev libfreetype-dev liblcms2-dev libopenjp2-7 libtiff-dev
+       libjpeg-dev zlib1g-dev libfreetype-dev liblcms2-dev libopenjp2-7 libtiff-dev \
+       pi-bluetooth bluez-firmware rfkill
    ```
 
    > **Note:** If you previously ran `pip install` before installing the image dependencies, Pillow may have built without JPEG/PNG support and will fail silently. Force reinstall it with: `<project-dir>/venv/bin/pip install --force-reinstall --no-cache-dir Pillow`.
+
+4. Unblock the adapter and grant the `dietpi` user permission to interact with the BlueZ DBus socket, which `bleak` strictly requires:
+   ```bash
+   rfkill unblock bluetooth
+   usermod -aG bluetooth dietpi
+   systemctl reload dbus
+   systemctl restart bluetooth
+   ```
 
 ### 2. Bare-Metal Deployment (Recommended)
 
