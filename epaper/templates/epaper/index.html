@@ -98,7 +98,13 @@
                 {% for img in images %}
                 <div class="gallery-card" onclick="triggerUpdate({{ img.id }})">
                     <div class="img-wrapper">
+                        {% if img.image %}
                         <img src="{{ img.image.url }}" alt="Uploaded Image {{ img.id }}">
+                        {% else %}
+                        <div class="text-placeholder" style="background: white; height: 100%; min-height: 120px; display: flex; align-items: center; justify-content: center; padding: 1rem; color: #333; font-weight: 600;">
+                            {{ img.text_overlay }}
+                        </div>
+                        {% endif %}
                         <div class="overlay">
                             <span>Upload to Display</span>
                         </div>
