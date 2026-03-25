@@ -1,0 +1,21 @@
+services:
+  web_epaper:
+    build: .
+    # Host networking is highly recommended for Bleak to detect host BLE adapters
+    network_mode: "host"
+    volumes:
+      # Map the application code
+      - .:/app
+      # CRITICAL: Expose the host's dbus socket for BlueZ BLE communications
+      - /run/dbus:/run/dbus:ro
+      # Persist the local SQLite DB data and media uploads
+      - ./data:/app/data
+    environment:
+      - DJANGO_SETTINGS_MODULE=config.settings
+      - DATABASE_PATH=/app/data/db.sqlite3
+      - MEDIA_ROOT_PATH=/app/data/media
+    # Start gunicorn and apply migrations
+    command: >
+      bash -c "python manage.py migrate 
+      && gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 3"
+    restart: unless-stopped
