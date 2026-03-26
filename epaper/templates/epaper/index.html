@@ -110,6 +110,7 @@
             <div class="gallery-grid">
                 {% for img in images %}
                 <div class="gallery-card" onclick="triggerUpdate({{ img.id }})">
+                    <button type="button" class="delete-btn" title="Delete image" onclick="event.stopPropagation(); deleteImage({{ img.id }})">✕</button>
                     <div class="img-wrapper">
                         {% if img.image %}
                         <img src="{{ img.image.url }}" alt="Uploaded Image {{ img.id }}">
@@ -187,6 +188,18 @@
                 statusBadge.className = 'status-badge error';
                 setTimeout(() => statusBadge.className = 'status-badge hidden', 10000);
             });
+        }
+
+        function deleteImage(imageId) {
+            if (!confirm('Delete this image?')) return;
+            fetch(`/delete/${imageId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                }
+            })
+            .then(() => window.location.reload())
+            .catch(err => logDebug(`ERROR deleting image: ${err}`));
         }
 
         function logDebug(msg) {

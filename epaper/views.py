@@ -59,6 +59,16 @@ def upload_image_view(request):
             messages.error(request, 'Failed to upload image.')
     return redirect('index')
 
+def delete_image_view(request, image_id):
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=405)
+    image_obj = get_object_or_404(EpaperImage, id=image_id)
+    if image_obj.image:
+        image_obj.image.delete(save=False)
+    image_obj.delete()
+    messages.success(request, 'Image deleted.')
+    return redirect('index')
+
 def trigger_update_view(request, image_id):
     if request.method != 'POST':
         return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=405)
