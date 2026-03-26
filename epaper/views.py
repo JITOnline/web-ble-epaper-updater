@@ -13,6 +13,7 @@ from gicisky_tag.encoder import encode_image, Dither, TagModel, ColorType
 from gicisky_tag.writer import send_data_to_screen
 from gicisky_tag.scanner import find_device
 from bleak import BleakClient
+from bleak.exc import BleakDeviceNotFoundError
 import logging
 
 # Track active diagnostic connections to MAC addresses across separate requests
@@ -140,6 +141,11 @@ def trigger_update_view(request, image_id):
             # Tiny delay to ensure BlueZ finishes the closing sequence before we report success
             await asyncio.sleep(0.5)
             msg_queue.put(f"SUCCESS: Image successfully transferred to MAC {mac_address}!")
+        except BleakDeviceNotFoundError:
+            msg_queue.put(
+                f"ERROR: Device {mac_address} not found. "
+                "Make sure the tag is powered on and nearby, then try again."
+            )
         except Exception as e:
             import traceback
             traceback.print_exc()
