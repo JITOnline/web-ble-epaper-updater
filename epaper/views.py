@@ -60,12 +60,15 @@ async def trigger_update_view(request, image_id):
     if request.method != 'POST':
         return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=405)
 
+    detailed_debug = request.GET.get('debug') == '1'
+    log_level = logging.DEBUG if detailed_debug else logging.INFO
+
     queue = asyncio.Queue()
     handler = QueueHandler(queue)
-    handler.setLevel(logging.DEBUG)
+    handler.setLevel(log_level)
     
     gicisky_logger = logging.getLogger("gicisky_tag")
-    gicisky_logger.setLevel(logging.DEBUG)
+    gicisky_logger.setLevel(log_level)
     gicisky_logger.addHandler(handler)
 
     async def run_update():
