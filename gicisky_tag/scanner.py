@@ -18,7 +18,7 @@ async def find_device():
                 break
 
         if found_id is not None:
-            address = str(device).upper()[0:17]
+            address = device.address.upper()
             logger.debug(f"Device {device}: {data}")
             m_data = data.manufacturer_data[found_id]
             

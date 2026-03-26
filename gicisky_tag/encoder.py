@@ -60,9 +60,9 @@ class Dither(Enum):
         return self.value
 
 
-def dither_image_bwr(image, dithering, debug_folder=None):
+def dither_image_bwr(image, dithering: Dither, debug_folder=None):
     """Dither the image using black, white and red."""
-    if dithering not in Dither:
+    if not isinstance(dithering, Dither):
         raise ValueError(f"Invalid dithering parameter: {dithering}")
 
     if dithering in (Dither.NONE, Dither.FLOYDSTEINBERG):
