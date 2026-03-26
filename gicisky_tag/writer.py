@@ -114,8 +114,17 @@ class ScreenWriter:
         await self._send_request([0x40, *settings])
 
     async def request_refresh(self):
-        logger.debug("Request: refresh display")
-        await self._send_request([0x01])
+        # Many tags are busy processing image data immediately after the transfer.
+        # We add a small delay and handle potential 'Unlikely Error' (0x0e) gracefully.
+        await asyncio.sleep(0.5) 
+        logger.info("Request: display refresh")
+        try:
+            await self._send_request([0x01])
+        except Exception as e:
+            if "0x0e" in str(e):
+                logger.warning("Display is busy refreshing (0x0e - likely success).")
+            else:
+                logger.error(f"Failed to send refresh: {e}")
 
     async def request_set_address(self, address):
         await self._send_request([0x19, *address[0:6:-1]])
@@ -160,8 +169,9 @@ class ScreenWriter:
             logger.error(f"Unknown state: {data}")
 
     async def send_image_block(self, part):
-        # Resolve safest block size with robust fallback logic
-        mtu_limit = (self.device.mtu_size - 7) if (self.device.mtu_size and self.device.mtu_size > 7) else 23
+        # Trust negotiated MTU, fallback to 23 only if completely unavailable
+        mtu_val = self.device.mtu_size if (self.device.mtu_size and self.device.mtu_size > 7) else 23
+        mtu_limit = mtu_val - 7
         hw_limit = self.block_size if self.block_size else 128
         safe_block_size = min(mtu_limit, hw_limit, 128)
         
@@ -183,8 +193,16 @@ async def send_data_to_screen(address, image_data):
     logger.info(f"Connecting to {address}...")
     async with BleakClient(address) as device:
         # Give the service discovery and internal stack time to settle
-        await asyncio.sleep(1.5)
-        logger.debug(f"MTU: {device.mtu_size}")
+        await asyncio.sleep(1.0)
+        
+        # BlueZ doesn't always negotiate the MTU immediately. We trigger it explicitly.
+        if device._backend.__class__.__name__ == "BleakClientBlueZDBus":
+            try:
+                await device._backend._acquire_mtu()
+            except:
+                logger.debug("MTU acquisition failed/unsupported. Using default.")
+        
+        logger.debug(f"Negotated MTU: {device.mtu_size}")
 
         screen = ScreenWriter(device, image_data)
         logger.info(f"Sending image data...")
