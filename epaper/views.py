@@ -157,6 +157,13 @@ async def send_cmd_view(request):
             data = json.loads(request.body)
             cmd_hex = data.get('cmd', '').strip()
             
+            if cmd_hex.lower() == 'scan':
+                from bleak import BleakScanner
+                devices = await BleakScanner.discover(timeout=5.0)
+                found = [f"{d.address} ({d.name or 'Unknown'})" for d in devices]
+                msg = "Found: " + ", ".join(found) if found else "No BLE devices found nearby."
+                return JsonResponse({'status': 'success', 'message': msg})
+
             config = await DeviceConfig.objects.aget(id=1)
             mac_address = config.mac_address
             if not mac_address:
@@ -167,7 +174,9 @@ async def send_cmd_view(request):
             cmd_bytes = bytes.fromhex(cmd_hex)
             async with BleakClient(mac_address) as device:
                 await device.write_gatt_char("0000fef1-0000-1000-8000-00805f9b34fb", cmd_bytes, response=True)
-            return JsonResponse({'status': 'success', 'message': f'Successfully sent {cmd_hex}'})
+            return JsonResponse({'status': 'success', 'message': f'Successfully sent {cmd_hex} to {mac_address}'})
+        except ValueError:
+            return JsonResponse({'status': 'error', 'message': 'Invalid hex format.'}, status=400)
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
     return JsonResponse({'status': 'error'}, status=405)
