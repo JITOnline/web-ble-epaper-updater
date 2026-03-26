@@ -171,14 +171,20 @@ class ScreenWriter:
             logger.error(f"Unknown state: {data}")
 
     async def send_image_block(self, part):
-        # Trust negotiated MTU, fallback to 23 only if completely unavailable
-        mtu_val = self.device.mtu_size if (self.device.mtu_size and self.device.mtu_size > 7) else 23
-        mtu_limit = mtu_val - 7
-        hw_limit = self.block_size if self.block_size else 128
-        # Cap at 244 (the max common Gicisky block size) instead of 128
-        safe_block_size = min(mtu_limit, hw_limit, 244)
+        # BLE Write Without Response: ATT overhead = 3 bytes (1 opcode + 2 handle)
+        # Max payload = MTU - 3. With MTU=247, max payload = 244.
+        mtu_val = self.device.mtu_size if (self.device.mtu_size and self.device.mtu_size > 3) else 23
+        mtu_payload_limit = mtu_val - 3  # max bytes we can write in one BLE message
         
-        img_block_size = safe_block_size - 4
+        # The tag tells us its expected message size via CMD 01 response (typically 244).
+        # Each message = 4 bytes part number + N bytes image data.
+        # CRITICAL: We MUST use the tag's block_size as the message size, because the tag
+        # calculates offsets as part_number * (block_size - 4). If we use a smaller size,
+        # every part after the first will be offset-shifted, causing garbled output.
+        hw_block_size = self.block_size if self.block_size else 244
+        message_size = min(mtu_payload_limit, hw_block_size)
+        
+        img_block_size = message_size - 4  # 240 bytes of image data per part
         num_parts = math.ceil(len(self.image) / img_block_size)
         assert (
             part < num_parts
