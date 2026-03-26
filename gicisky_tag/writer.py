@@ -30,8 +30,8 @@ class ScreenWriter:
         self.device = device
         self.image = image
         self.block_size = None
-        self.transfer_queue = asyncio.queues.Queue()
-        self.notify_handler_results = asyncio.queues.Queue()
+        self.transfer_queue = asyncio.Queue()
+        self.notify_handler_results = asyncio.Queue()
 
     async def start_notify(self):
         async def notify_handler_task(sender, data):
@@ -78,7 +78,7 @@ class ScreenWriter:
         await self.device.write_gatt_char(
             ScreenWriter.IMAGE_CHARACTERISTIC,
             data,
-            response=True,
+            response=False,
         )
 
     async def request_block_size(self):
@@ -152,12 +152,14 @@ class ScreenWriter:
             logger.error(f"Unknown state: {data}")
 
     async def send_image_block(self, part):
-        img_block_size = self.block_size - 4
+        # Cap the block size to be safe with MTU (MTU-3 is the absolute limit, we take a bit more)
+        safe_block_size = min(self.block_size, (self.device.mtu_size - 7)) if self.device.mtu_size else self.block_size
+        img_block_size = safe_block_size - 4
         num_parts = math.ceil(len(self.image) / img_block_size)
         assert (
             part < num_parts
         ), f"Part {part} is too high, there are only {num_parts} parts."
-        logger.info(f"Sending image part {part + 1}/{num_parts}")
+        logger.info(f"Sending image part {part + 1}/{num_parts} (Size: {img_block_size})")
         image_block = self.image[
             part * img_block_size : part * img_block_size + img_block_size
         ]
