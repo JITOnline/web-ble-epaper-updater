@@ -78,7 +78,8 @@ class ScreenWriter:
         await self.device.write_gatt_char(
             ScreenWriter.IMAGE_CHARACTERISTIC,
             data,
-            response=False,
+            # Reverting back to response=True for maximum compatibility with all BlueZ/Hardware combos
+            response=True,
         )
 
     async def request_block_size(self):
@@ -136,9 +137,10 @@ class ScreenWriter:
                 raise Exception(f"Error: update cancel {data[1]}")
         elif data[0] == 0x05:
             if data[1] == 0x00:
-                logger.debug(f"Success: image transfer request")
+                next_part = int.from_bytes(data[2:6], "little")
+                logger.debug(f"Success: image transfer request Part {next_part}")
                 # Push a new block to be sent by `handle_transfer`
-                await self.transfer_queue.put(int.from_bytes(data[2:6], "little"))
+                await self.transfer_queue.put(next_part)
             elif data[1] == 0x08:
                 logger.debug(f"Success: image transfer request")
                 logger.debug(f"Screen write complete")
@@ -156,8 +158,9 @@ class ScreenWriter:
             logger.error(f"Unknown state: {data}")
 
     async def send_image_block(self, part):
-        # Cap the block size to be safe with MTU (MTU-3 is the absolute limit, we take a bit more)
-        safe_block_size = min(self.block_size, (self.device.mtu_size - 7)) if self.device.mtu_size else self.block_size
+        # Cap the block size firmly at 128. Many cheap BLE tags have small internal buffers
+        # that struggle with larger MTUs even if they advertise them.
+        safe_block_size = min(self.block_size, (self.device.mtu_size - 7), 128) if self.device.mtu_size else min(self.block_size, 128)
         img_block_size = safe_block_size - 4
         num_parts = math.ceil(len(self.image) / img_block_size)
         assert (
