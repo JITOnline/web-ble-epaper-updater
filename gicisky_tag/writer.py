@@ -175,7 +175,8 @@ class ScreenWriter:
         mtu_val = self.device.mtu_size if (self.device.mtu_size and self.device.mtu_size > 7) else 23
         mtu_limit = mtu_val - 7
         hw_limit = self.block_size if self.block_size else 128
-        safe_block_size = min(mtu_limit, hw_limit, 128)
+        # Cap at 244 (the max common Gicisky block size) instead of 128
+        safe_block_size = min(mtu_limit, hw_limit, 244)
         
         img_block_size = safe_block_size - 4
         num_parts = math.ceil(len(self.image) / img_block_size)

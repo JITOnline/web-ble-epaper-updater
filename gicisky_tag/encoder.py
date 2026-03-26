@@ -246,7 +246,8 @@ def encode_image(image, tag_model=None, dithering=Dither.NONE, debug_folder=None
     # Gicisky tags expect a 4-byte little-endian length at the start of the data stream,
     # but ONLY when compression is enabled.
     if tag_model.use_compression:
-        image_data = len(image_data).to_bytes(4, "little") + image_data
+        # The length field must include its own 4 bytes in the total count
+        image_data = (len(image_data) + 4).to_bytes(4, "little") + image_data
         
     return image_data
 
