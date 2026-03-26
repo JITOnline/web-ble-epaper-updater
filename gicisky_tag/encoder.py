@@ -200,12 +200,12 @@ def encode_image(image, tag_model=None, dithering=Dither.NONE, debug_folder=None
     bwr_image = dither_image_bwr(image, dithering=dithering, debug_folder=debug_folder)
     bwr_pixels = np.asarray(bwr_image.convert("RGB")).astype(int)
 
-    # BW bitmap: From ATC1441: Black is 1, White is 0
-    # luminance < 128 sets the bit.
-    bw_bitmap = (bwr_pixels != white_color).all(axis=-1)
+    # BW bitmap: From ATC1441: White is 1, Black and Red are 0
+    # luminance > 128 sets the bit for White.
+    bw_bitmap = (bwr_pixels == white_color).all(axis=-1)
     
-    # Red bitmap: Red is 1
-    # Red has red component > 128 and green/blue < 128
+    # Red bitmap: From ATC1441: Red is 1
+    # Red color sets the bit in the second color channel.
     red_bitmap = (bwr_pixels == red_color).all(axis=-1)
     
     # The current code uses:
