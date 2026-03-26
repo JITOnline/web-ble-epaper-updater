@@ -15,6 +15,10 @@ from gicisky_tag.scanner import find_device
 from bleak import BleakClient
 import logging
 
+# Track active diagnostic connections to MAC addresses across separate requests
+_DIAGNOSTIC_CLIENTS = {}
+_CLIENT_LOCK = asyncio.Lock()
+
 class QueueHandler(logging.Handler):
     def __init__(self, q):
         super().__init__()
@@ -61,7 +65,7 @@ def trigger_update_view(request, image_id):
     detailed_debug = request.GET.get('debug') == '1'
     log_level = logging.DEBUG if detailed_debug else logging.INFO
 
-    msg_queue = queue.Queue()
+    msg_queue = queue.Queue() # type: queue.Queue[Optional[str]]
     handler = QueueHandler(msg_queue)
     handler.setLevel(log_level)
     
@@ -69,10 +73,9 @@ def trigger_update_view(request, image_id):
     gicisky_logger.setLevel(log_level)
     gicisky_logger.addHandler(handler)
 
-    async def run_update():
+    async def run_update(mac_address, config):
         try:
             image_obj = await EpaperImage.objects.aget(id=image_id)
-            config = await DeviceConfig.objects.aget(id=1)
             
             mac_address = config.mac_address
             raw_type = None
@@ -145,8 +148,27 @@ def trigger_update_view(request, image_id):
             gicisky_logger.removeHandler(handler)
             msg_queue.put(None)
 
+    async def run_with_cleanup():
+        # Get host and config details first
+        config = await DeviceConfig.objects.aget(id=1)
+        mac_addr = config.mac_address
+        if not mac_addr:
+            msg_queue.put("ERROR: No MAC address configured.")
+            msg_queue.put(None)
+            return
+
+        # Ensure we don't have a diagnostic connection blocking the transfer
+        async with _CLIENT_LOCK:
+            if mac_addr in _DIAGNOSTIC_CLIENTS:
+                try:
+                    old_client = _DIAGNOSTIC_CLIENTS.pop(mac_addr)
+                    await old_client.disconnect()
+                except:
+                    pass
+        await run_update(mac_addr, config)
+
     def thread_worker():
-        asyncio.run(run_update())
+        asyncio.run(run_with_cleanup())
 
     threading.Thread(target=thread_worker, daemon=True).start()
 
@@ -201,13 +223,40 @@ async def connect_device_view(request):
         if not mac_address:
             return JsonResponse({'status': 'error', 'message': 'No MAC address configured'}, status=400)
             
-        async with BleakClient(mac_address) as client:
+        async with _CLIENT_LOCK:
+            # If already connected, just report it
+            if mac_address in _DIAGNOSTIC_CLIENTS:
+                client = _DIAGNOSTIC_CLIENTS[mac_address]
+                if client.is_connected:
+                    return JsonResponse({'status': 'success', 'message': f'Already connected to {mac_address}.'})
+                else:
+                    _DIAGNOSTIC_CLIENTS.pop(mac_address)
+
+            client = BleakClient(mac_address)
+            await client.connect()
+            _DIAGNOSTIC_CLIENTS[mac_address] = client
+            
             # Send CMD 01 to verify it responds
             await client.write_gatt_char("0000fef1-0000-1000-8000-00805f9b34fb", bytes([0x01]), response=True)
-            return JsonResponse({'status': 'success', 'message': f'Successfully connected to {mac_address} and verified with CMD 01.'})
+            return JsonResponse({'status': 'success', 'message': f'Connected to {mac_address} (session persists). Verified with CMD 01.'})
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': f'Connection failed: {str(e)}'}, status=400)
 
 async def disconnect_device_view(request):
-    # Since we are using short-lived connections, "disconnect" is just a diagnostic confirmation
-    return JsonResponse({'status': 'success', 'message': 'Device disconnected (connection was transient).'})
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'message': 'Invalid method'}, status=405)
+        
+    try:
+        config = await DeviceConfig.objects.aget(id=1)
+        mac_address = config.mac_address
+        
+        async with _CLIENT_LOCK:
+            if mac_address in _DIAGNOSTIC_CLIENTS:
+                client = _DIAGNOSTIC_CLIENTS.pop(mac_address)
+                if client.is_connected:
+                    await client.disconnect()
+                    return JsonResponse({'status': 'success', 'message': f'Disconnected from {mac_address}.'})
+        
+        return JsonResponse({'status': 'success', 'message': f'No active connection for {mac_address or "unknown"}.'})
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': f'Disconnect failed: {str(e)}'}, status=400)
