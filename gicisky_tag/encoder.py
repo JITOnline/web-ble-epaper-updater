@@ -208,27 +208,20 @@ def encode_image(image, tag_model=None, dithering=Dither.NONE, debug_folder=None
     # Red color sets the bit in the second color channel.
     red_bitmap = (bwr_pixels == red_color).all(axis=-1)
     
-    # The current code uses:
-    # bw_bitmap = np.flipud(np.rot90(bw_bitmap))
-    # This rotates the image 90 degrees and flips it?
-    # Let's see the HTML logic:
-    # for (var i = 0; i < canvas.width; i++) {
-    #     for (var x = 0; x < canvas.height; x++) {
-    # This iterates by columns, then by rows within columns.
-    # This IS a 90-degree rotation.
-    
-    # packing bits:
-    # bitPosition starts at 7, goes down to 0.
-    # This matches np.packbits with axis=-1 if the bits are in the right order.
-    
-    # Let's stick with the current rotation/flipping for now if it worked for 250x122.
-    # Actually, if we use the HTML's approach:
-    # byteData.push(currentByte);
-    # where currentByte is built from pixels[x, y] in column-major order.
-    
-    # In numpy, we can do this by transposing and then packing.
-    bw_packed = np.packbits(bw_bitmap.T, axis=-1)
-    red_packed = np.packbits(red_bitmap.T, axis=-1)
+    # CRITICAL: The ATC1441 reference reads pixels as:
+    #   for i in range(width):       # "column" index
+    #       for x in range(height):  # pixel within "column"
+    #           curr = (i * height + x)  # sequential chunk index in flat buffer
+    #
+    # This is NOT a true column-major image read. It treats the flat row-major
+    # pixel buffer as if it were laid out (width, height) - i.e., it reads
+    # sequential chunks of `height` pixels from the flat array.
+    #
+    # The numpy equivalent: flatten() then reshape to (width, height).
+    # Using .T would give actual image columns (col_i, all_rows), which is WRONG.
+    num_line_bytes = math.ceil(tag_model.height / 8)
+    bw_packed = np.packbits(bw_bitmap.flatten().reshape(tag_model.width, tag_model.height), axis=-1)
+    red_packed = np.packbits(red_bitmap.flatten().reshape(tag_model.width, tag_model.height), axis=-1)
     
     if tag_model.use_compression:
         bw_data = compress_bitmap_generic(bw_packed, tag_model.width, tag_model.height)
