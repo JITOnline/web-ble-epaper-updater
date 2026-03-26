@@ -1,4 +1,6 @@
 import asyncio
+import threading
+import queue
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse, StreamingHttpResponse
 from django.contrib import messages
@@ -14,16 +16,12 @@ from bleak import BleakClient
 import logging
 
 class QueueHandler(logging.Handler):
-    def __init__(self, queue):
+    def __init__(self, q):
         super().__init__()
-        self.queue = queue
+        self.q = q
     def emit(self, record):
         msg = self.format(record)
-        try:
-            loop = asyncio.get_running_loop()
-            loop.call_soon_threadsafe(self.queue.put_nowait, msg)
-        except RuntimeError:
-            pass
+        self.q.put(msg)
 
 def index_view(request):
     config = DeviceConfig.get_solo()
@@ -56,15 +54,15 @@ def upload_image_view(request):
             messages.error(request, 'Failed to upload image.')
     return redirect('index')
 
-async def trigger_update_view(request, image_id):
+def trigger_update_view(request, image_id):
     if request.method != 'POST':
         return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=405)
 
     detailed_debug = request.GET.get('debug') == '1'
     log_level = logging.DEBUG if detailed_debug else logging.INFO
 
-    queue = asyncio.Queue()
-    handler = QueueHandler(queue)
+    msg_queue = queue.Queue()
+    handler = QueueHandler(msg_queue)
     handler.setLevel(log_level)
     
     gicisky_logger = logging.getLogger("gicisky_tag")
@@ -80,10 +78,10 @@ async def trigger_update_view(request, image_id):
             raw_type = None
 
             if not mac_address:
-                await queue.put("Scanning for nearby E-Paper tags...")
+                msg_queue.put("Scanning for nearby E-Paper tags...")
                 device_info = await find_device()
                 if not device_info:
-                    await queue.put("ERROR: No Tag Found nearby. Please specify MAC Address manually if scanning fails.")
+                    msg_queue.put("ERROR: No Tag Found nearby. Please specify MAC Address manually if scanning fails.")
                     return
                 mac_address = device_info["address"]
                 raw_type = device_info["raw_type"]
@@ -126,24 +124,27 @@ async def trigger_update_view(request, image_id):
                 
             image_data = encode_image(img, tag_model=tag_model, dithering=dither_val)
             
-            await queue.put(f"Starting transfer to {mac_address}...")
+            msg_queue.put(f"Starting transfer to {mac_address}...")
             await send_data_to_screen(mac_address, image_data)
             
-            await queue.put(f"SUCCESS: Image successfully transferred to MAC {mac_address}!")
+            msg_queue.put(f"SUCCESS: Image successfully transferred to MAC {mac_address}!")
         except Exception as e:
             import traceback
             traceback.print_exc()
-            await queue.put(f"ERROR: {str(e)}")
+            msg_queue.put(f"ERROR: {str(e)}")
         finally:
             gicisky_logger.removeHandler(handler)
-            await queue.put(None)
+            msg_queue.put(None)
 
-    asyncio.create_task(run_update())
+    def thread_worker():
+        asyncio.run(run_update())
 
-    async def event_stream():
+    threading.Thread(target=thread_worker, daemon=True).start()
+
+    def event_stream():
         import json
         while True:
-            msg = await queue.get()
+            msg = msg_queue.get()
             if msg is None:
                 break
             yield json.dumps({'msg': msg}) + '\n'

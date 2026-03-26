@@ -54,8 +54,7 @@ class ScreenWriter:
         await self.device.stop_notify(ScreenWriter.REQUEST_CHARACTERISTIC)
 
     async def _send_request(self, data):
-        logger.log(
-            logging.NOTSET,
+        logger.debug(
             f"Sending request message: {[data[i] for i in range(len(data))]}",
         )
         if not isinstance(data, bytes):
@@ -72,8 +71,7 @@ class ScreenWriter:
             raise result
 
     async def _send_write(self, data):
-        logger.log(
-            logging.NOTSET,
+        logger.debug(
             f"Sending image message: {[data[i] for i in range(len(data))]}",
         )
         assert len(data) <= self.block_size
@@ -116,9 +114,7 @@ class ScreenWriter:
         await self._send_request([0x19, *address[0:6:-1]])
 
     async def notify_handler(self, _characteristic, data):
-        logger.log(
-            logging.NOTSET, f"Received notify: {[data[i] for i in range(len(data))]}"
-        )
+        logger.debug(f"Received notify: {[data[i] for i in range(len(data))]}")
         if data[0] == 0x01:
             assert len(data) == 3
             logger.debug(f"Success: block size request")
