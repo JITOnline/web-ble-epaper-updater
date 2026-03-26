@@ -90,7 +90,9 @@ class ScreenWriter:
         assert self.block_size is not None and self.block_size > 0
         size = len(self.image)
         logger.debug(f"Request: write screen (size: {size})")
-        await self._send_request([0x02, *size.to_bytes(4, "little")])
+        # ATC1441 reference sends 02 + 4 byte len + 000000 (3 zero bytes)
+        payload = [0x02, *size.to_bytes(4, "little"), 0x00, 0x00, 0x00]
+        await self._send_request(payload)
 
     async def request_start_transfer(self):
         logger.debug("Request: start transfer")
