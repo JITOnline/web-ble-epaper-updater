@@ -30,7 +30,7 @@ class DeviceConfig(models.Model):
     # Forced logic from ATC_GICISKY
     force_compression = models.BooleanField(default=True)
     force_second_color = models.BooleanField(default=True)
-    force_mirror = models.BooleanField(default=False)
+    force_mirror = models.BooleanField(default=True)
 
     def save(self, *args, **kwargs):
         if not self.pk and DeviceConfig.objects.exists():

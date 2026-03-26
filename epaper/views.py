@@ -254,8 +254,12 @@ async def disconnect_device_view(request):
             if mac_address in _DIAGNOSTIC_CLIENTS:
                 client = _DIAGNOSTIC_CLIENTS.pop(mac_address)
                 if client.is_connected:
+                    try:
+                        await client.unpair()
+                    except Exception:
+                        pass  # unpair may not be supported on all backends
                     await client.disconnect()
-                    return JsonResponse({'status': 'success', 'message': f'Disconnected from {mac_address}.'})
+                    return JsonResponse({'status': 'success', 'message': f'Unpaired and disconnected from {mac_address}.'})
         
         return JsonResponse({'status': 'success', 'message': f'No active connection for {mac_address or "unknown"}.'})
     except Exception as e:
