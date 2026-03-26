@@ -110,6 +110,10 @@ class ScreenWriter:
     async def request_write_settings(self, settings):
         await self._send_request([0x40, *settings])
 
+    async def request_refresh(self):
+        logger.debug("Request: refresh display")
+        await self._send_request([0x01])
+
     async def request_set_address(self, address):
         await self._send_request([0x19, *address[0:6:-1]])
 
@@ -185,4 +189,7 @@ async def send_data_to_screen(address, image_data):
         await screen.request_write_screen()
         await screen.request_start_transfer()
         await screen.handle_transfer()
+        logger.info("Transfer complete. Triggering refresh...")
+        await screen.request_refresh()
+        await asyncio.sleep(1.0)  # Wait for display to start refresh before disconnecting
         await screen.stop_notify()

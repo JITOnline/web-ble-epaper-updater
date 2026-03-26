@@ -85,6 +85,13 @@ def trigger_update_view(request, image_id):
                     return
                 mac_address = device_info["address"]
                 raw_type = device_info["raw_type"]
+            else:
+                # Pre-scan for the specific address to "warm up" the BlueZ cache
+                msg_queue.put(f"Waking up connection for {mac_address}...")
+                from bleak import BleakScanner
+                device = await BleakScanner.find_device_by_address(mac_address, timeout=5.0)
+                if not device:
+                    msg_queue.put(f"WARNING: Device {mac_address} not found in discovery. Connection might fail if it's sleeping.")
 
             if config.raw_type:
                 raw_type = int(config.raw_type, 16)
