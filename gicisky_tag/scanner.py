@@ -33,7 +33,7 @@ async def find_device():
             if len(m_data) >= 2:
                 power_data = float(m_data[1]) / 10
                 
-            logger.info(f"Found device {address} (ID: {found_id:04x}, rawType: {raw_type:04x if raw_type is not None else 0}). Battery: {f'{power_data:.1f} V' if power_data is not None else 'N/A'}")
+            logger.info(f"Found device {address} (ID: {found_id:04x}, rawType: {f'{raw_type:04x}' if raw_type is not None else 'N/A'}). Battery: {f'{power_data:.1f} V' if power_data is not None else 'N/A'}")
             device_info = {"address": address, "raw_type": raw_type}
 
     scanner = BleakScanner(scan_callback)
