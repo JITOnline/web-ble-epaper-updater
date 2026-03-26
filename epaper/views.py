@@ -134,6 +134,8 @@ def trigger_update_view(request, image_id):
             msg_queue.put(f"Starting transfer to {mac_address}...")
             await send_data_to_screen(mac_address, image_data)
             
+            # Tiny delay to ensure BlueZ finishes the closing sequence before we report success
+            await asyncio.sleep(0.5)
             msg_queue.put(f"SUCCESS: Image successfully transferred to MAC {mac_address}!")
         except Exception as e:
             import traceback
@@ -188,3 +190,24 @@ async def send_cmd_view(request):
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
     return JsonResponse({'status': 'error'}, status=405)
+
+async def connect_device_view(request):
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'message': 'Invalid method'}, status=405)
+    
+    try:
+        config = await DeviceConfig.objects.aget(id=1)
+        mac_address = config.mac_address
+        if not mac_address:
+            return JsonResponse({'status': 'error', 'message': 'No MAC address configured'}, status=400)
+            
+        async with BleakClient(mac_address) as client:
+            # Send CMD 01 to verify it responds
+            await client.write_gatt_char("0000fef1-0000-1000-8000-00805f9b34fb", bytes([0x01]), response=True)
+            return JsonResponse({'status': 'success', 'message': f'Successfully connected to {mac_address} and verified with CMD 01.'})
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': f'Connection failed: {str(e)}'}, status=400)
+
+async def disconnect_device_view(request):
+    # Since we are using short-lived connections, "disconnect" is just a diagnostic confirmation
+    return JsonResponse({'status': 'success', 'message': 'Device disconnected (connection was transient).'})

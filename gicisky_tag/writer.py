@@ -103,6 +103,8 @@ class ScreenWriter:
             if block is None:
                 return
             await self.send_image_block(block)
+            # Small 10ms gap to let the loop process incoming notifications more reliably
+            await asyncio.sleep(0.01)
 
     async def request_write_cancel(self):
         logger.debug("Request: write cancel")

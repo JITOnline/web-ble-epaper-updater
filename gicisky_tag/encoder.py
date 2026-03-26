@@ -243,9 +243,8 @@ def encode_image(image, tag_model=None, dithering=Dither.NONE, debug_folder=None
         # BWR, BWY, BWRY, BWRGBYO
         image_data = bytearray(bw_data) + bytearray(red_data)
         
-    # Prepend length if using compression (as per HTML/current code)
-    if tag_model.use_compression:
-        image_data = len(image_data).to_bytes(4, "little") + image_data
+    # Gicisky tags expect the 4-byte length at the start of the data stream
+    image_data = len(image_data).to_bytes(4, "little") + image_data
         
     return image_data
 

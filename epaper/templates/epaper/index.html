@@ -90,6 +90,10 @@
                     <input type="text" id="debug-cmd" placeholder="e.g. 01">
                     <button type="button" class="btn secondary" style="margin-top:0;" onclick="sendDebugCmd()">Send</button>
                 </div>
+                <div class="form-row" style="margin-top: 0.5rem; display: flex; gap: 0.5rem;">
+                    <button type="button" class="btn secondary" style="flex: 1; margin:0;" onclick="connectDevice()">Connect & Test</button>
+                    <button type="button" class="btn secondary" style="flex: 1; margin:0; background: #4b5563;" onclick="disconnectDevice()">Disconnect</button>
+                </div>
                 <div id="debug-log" style="margin-top: 1rem; font-family: monospace; font-size: 0.8rem; height: 100px; overflow-y: scroll; background: #000; padding:0.5rem; border-radius:6px; color:#10b981;">
                     System ready.
                 </div>
@@ -207,6 +211,37 @@
             .then(res => res.json())
             .then(data => {
                 logDebug(`<- ${data.status.toUpperCase()}: ${data.message}`);
+            })
+            .catch(err => logDebug(`<- ERROR: ${err}`));
+        }
+
+        function connectDevice() {
+            logDebug(`-> Attempting connection & test...`);
+            fetch('/connect/', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') logDebug(`<- SUCCESS: ${data.message}`);
+                else logDebug(`<- ERROR: ${data.message}`);
+            })
+            .catch(err => logDebug(`<- ERROR: ${err}`));
+        }
+
+        function disconnectDevice() {
+            logDebug(`-> Requesting disconnect...`);
+            fetch('/disconnect/', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                }
+            })
+            .then(res => res.json())
+            .then(data => {
+                logDebug(`<- ${data.message}`);
             })
             .catch(err => logDebug(`<- ERROR: ${err}`));
         }
