@@ -190,6 +190,23 @@ input[type="checkbox"]:checked::after {
     background: var(--secondary-hover);
 }
 
+.btn.calendar-btn {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-top: 0;
+}
+
+.btn.calendar-btn:hover {
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
 .file-drop-area {
     position: relative;
     display: flex;

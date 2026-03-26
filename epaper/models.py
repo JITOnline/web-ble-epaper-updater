@@ -32,6 +32,9 @@ class DeviceConfig(models.Model):
     force_second_color = models.BooleanField(default=True)
     force_mirror = models.BooleanField(default=True)
 
+    # Calendar integration
+    ical_url = models.URLField(max_length=500, blank=True, help_text="iCal feed URL for calendar image generation")
+
     def save(self, *args, **kwargs):
         if not self.pk and DeviceConfig.objects.exists():
             raise ValidationError('There can be only one DeviceConfig instance')

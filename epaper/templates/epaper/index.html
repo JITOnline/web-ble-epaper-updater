@@ -54,6 +54,11 @@
                         {{ config_form.force_mirror }} <label for="id_force_mirror">Force Mirror</label>
                     </div>
                 </div>
+
+                <div class="form-group">
+                    <label for="id_ical_url">iCal Feed URL</label>
+                    {{ config_form.ical_url }}
+                </div>
                 
                 <button type="submit" class="btn primary">Save Config</button>
             </form>
@@ -76,6 +81,15 @@
                         {{ upload_form.image }}
                     </div>
                     <button type="submit" class="btn secondary">Upload Image or Text</button>
+                </form>
+            </div>
+
+            <div class="calendar-section" style="margin-top: 1rem;">
+                <form method="post" action="{% url 'generate_calendar' %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn calendar-btn" id="generate-calendar-btn">
+                        <span class="cal-icon">📅</span> Generate Calendar Image
+                    </button>
                 </form>
             </div>
 

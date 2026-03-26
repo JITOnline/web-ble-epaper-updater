@@ -14,6 +14,7 @@ from gicisky_tag.writer import send_data_to_screen
 from gicisky_tag.scanner import find_device
 from bleak import BleakClient
 from bleak.exc import BleakDeviceNotFoundError
+from .calendar import generate_calendar_image
 import logging
 
 # Track active diagnostic connections to MAC addresses across separate requests
@@ -280,3 +281,35 @@ async def disconnect_device_view(request):
         return JsonResponse({'status': 'success', 'message': f'No active connection for {mac_address or "unknown"}.'})
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': f'Disconnect failed: {str(e)}'}, status=400)
+
+def generate_calendar_view(request):
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=405)
+
+    config = DeviceConfig.get_solo()
+    if not config.ical_url:
+        messages.error(request, 'No iCal URL configured. Set it in Settings first.')
+        return redirect('index')
+
+    try:
+        img = generate_calendar_image(config.ical_url)
+    except Exception as e:
+        messages.error(request, f'Failed to generate calendar image: {e}')
+        return redirect('index')
+
+    # Save to an in-memory file, then to an EpaperImage
+    from django.core.files.base import ContentFile
+    from io import BytesIO
+    import time as _time
+
+    buf = BytesIO()
+    img.save(buf, format='PNG')
+    buf.seek(0)
+
+    fname = f"calendar_{int(_time.time())}.png"
+    epaper_img = EpaperImage()
+    epaper_img.image.save(fname, ContentFile(buf.read()), save=True)
+
+    messages.success(request, 'Calendar image generated and added to gallery.')
+    return redirect('index')
+

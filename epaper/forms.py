@@ -20,4 +20,5 @@ class DeviceConfigForm(forms.ModelForm):
             'width_override': forms.NumberInput(attrs={'class': 'text-input', 'placeholder': 'Width'}),
             'height_override': forms.NumberInput(attrs={'class': 'text-input', 'placeholder': 'Height'}),
             'dithering': forms.Select(attrs={'class': 'select-input'}),
+            'ical_url': forms.URLInput(attrs={'class': 'text-input', 'placeholder': 'https://calendar.google.com/...ical'}),
         }

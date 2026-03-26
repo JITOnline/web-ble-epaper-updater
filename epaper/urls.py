@@ -9,4 +9,5 @@ urlpatterns = [
     path('send-cmd/', views.send_cmd_view, name='send_cmd'),
     path('connect/', views.connect_device_view, name='connect_device'),
     path('disconnect/', views.disconnect_device_view, name='disconnect_device'),
+    path('generate-calendar/', views.generate_calendar_view, name='generate_calendar'),
 ]
