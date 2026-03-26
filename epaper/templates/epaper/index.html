@@ -138,18 +138,41 @@
                     'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
                 }
             })
-            .then(res => res.json())
-            .then(data => {
-                if(data.status === 'success') {
-                    statusBadge.textContent = 'Success!';
-                    statusBadge.className = 'status-badge success';
-                } else {
-                    statusBadge.textContent = 'Failed: ' + data.message;
-                    statusBadge.className = 'status-badge error';
+            .then(async res => {
+                const reader = res.body.getReader();
+                const decoder = new TextDecoder('utf-8');
+                let buffer = '';
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    buffer += decoder.decode(value, {stream: true});
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop(); // Keep incomplete line
+                    for (let line of lines) {
+                        line = line.trim();
+                        if (!line) continue;
+                        try {
+                            const data = JSON.parse(line);
+                            if (data.msg) logDebug(data.msg);
+                            else if (data.message) logDebug(data.message); // Fallback for 405
+
+                            if ((data.msg && data.msg.startsWith('SUCCESS')) || data.status === 'success') {
+                                statusBadge.textContent = 'Success!';
+                                statusBadge.className = 'status-badge success';
+                                setTimeout(() => statusBadge.className = 'status-badge hidden', 10000);
+                            } else if ((data.msg && data.msg.startsWith('ERROR')) || data.status === 'error') {
+                                statusBadge.textContent = 'Failed';
+                                statusBadge.className = 'status-badge error';
+                                setTimeout(() => statusBadge.className = 'status-badge hidden', 10000);
+                            }
+                        } catch(e) {
+                            console.error(e, line);
+                        }
+                    }
                 }
-                setTimeout(() => statusBadge.className = 'status-badge hidden', 10000);
             })
             .catch(err => {
+                logDebug(`ERROR contacting server: ${err}`);
                 statusBadge.textContent = 'Error contacting server';
                 statusBadge.className = 'status-badge error';
                 setTimeout(() => statusBadge.className = 'status-badge hidden', 10000);
