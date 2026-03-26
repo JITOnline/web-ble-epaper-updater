@@ -78,8 +78,8 @@ class ScreenWriter:
         await self.device.write_gatt_char(
             ScreenWriter.IMAGE_CHARACTERISTIC,
             data,
-            # Reverting back to response=True for maximum compatibility with all BlueZ/Hardware combos
-            response=True,
+            # Gicisky tags prefer Write Without Response for the image characteristic.
+            response=False,
         )
 
     async def request_block_size(self):
@@ -103,8 +103,8 @@ class ScreenWriter:
             if block is None:
                 return
             await self.send_image_block(block)
-            # Small 10ms gap to let the loop process incoming notifications more reliably
-            await asyncio.sleep(0.01)
+            # 20ms gap to let the loop process incoming notifications more reliably
+            await asyncio.sleep(0.02)
 
     async def request_write_cancel(self):
         logger.debug("Request: write cancel")
@@ -160,9 +160,11 @@ class ScreenWriter:
             logger.error(f"Unknown state: {data}")
 
     async def send_image_block(self, part):
-        # Cap the block size firmly at 128. Many cheap BLE tags have small internal buffers
-        # that struggle with larger MTUs even if they advertise them.
-        safe_block_size = min(self.block_size, (self.device.mtu_size - 7), 128) if self.device.mtu_size else min(self.block_size, 128)
+        # Resolve safest block size with robust fallback logic
+        mtu_limit = (self.device.mtu_size - 7) if (self.device.mtu_size and self.device.mtu_size > 7) else 23
+        hw_limit = self.block_size if self.block_size else 128
+        safe_block_size = min(mtu_limit, hw_limit, 128)
+        
         img_block_size = safe_block_size - 4
         num_parts = math.ceil(len(self.image) / img_block_size)
         assert (
@@ -180,11 +182,8 @@ class ScreenWriter:
 async def send_data_to_screen(address, image_data):
     logger.info(f"Connecting to {address}...")
     async with BleakClient(address) as device:
-        # BlueZ doesn't have a proper way to get the MTU, so we have this hack.
-        # If this doesn't work for you, you can set the device._mtu_size attribute
-        # to override the value instead.
-        if device._backend.__class__.__name__ == "BleakClientBlueZDBus":
-            await device._backend._acquire_mtu()
+        # Give the service discovery and internal stack time to settle
+        await asyncio.sleep(1.5)
         logger.debug(f"MTU: {device.mtu_size}")
 
         screen = ScreenWriter(device, image_data)
