@@ -18,7 +18,10 @@ class Migration(migrations.Migration):
                 ('mac_address', models.CharField(blank=True, default='', max_length=17)),
                 ('rotate', models.BooleanField(default=False)),
                 ('negative', models.BooleanField(default=False)),
-                ('dithering', models.CharField(choices=[('none', 'None'), ('floydsteinberg', 'Floyd-Steinberg'), ('combined', 'Combined')], default='none', max_length=20)),
+                ('dithering', models.CharField(
+                    choices=[('none', 'None'), ('floydsteinberg', 'Floyd-Steinberg'), ('combined', 'Combined')],
+                    default='none', max_length=20,
+                )),
             ],
         ),
         migrations.CreateModel(

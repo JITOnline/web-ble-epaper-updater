@@ -33,7 +33,11 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='deviceconfig',
             name='raw_type',
-            field=models.CharField(blank=True, help_text='e.g. 410B. Leave empty to autodetect or use defaults', max_length=10),
+            field=models.CharField(
+                blank=True,
+                help_text='e.g. 410B. Leave empty to autodetect or use defaults',
+                max_length=10,
+            ),
         ),
         migrations.AddField(
             model_name='deviceconfig',
@@ -43,7 +47,11 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='epaperimage',
             name='text_overlay',
-            field=models.CharField(blank=True, help_text='Text to overlay on a blank canvas instead of uploading an image', max_length=255),
+            field=models.CharField(
+                blank=True,
+                help_text='Text to overlay on a blank canvas instead of uploading an image',
+                max_length=255,
+            ),
         ),
         migrations.AlterField(
             model_name='epaperimage',

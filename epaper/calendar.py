@@ -134,90 +134,76 @@ def fetch_events_today(ical_url, local_tz=None):
     return events
 
 
-def generate_calendar_image(ical_url, local_tz=None):
-    """Generate an 800x480 PIL Image showing today's calendar from an iCal URL.
+# ── Drawing helpers ───────────────────────────────────────────────
 
-    Returns a PIL.Image.Image in RGB mode.
-    """
-    if local_tz is None:
-        local_tz = dateutil_tz.tzlocal()
-
-    now = datetime.now(tz=local_tz)
-    today = now.date()
-
-    events = fetch_events_today(ical_url, local_tz=local_tz)
-    all_day_events = [e for e in events if e["all_day"]]
-    timed_events = [e for e in events if not e["all_day"]]
-
-    logger.info(f"Calendar: {len(timed_events)} timed events, {len(all_day_events)} all-day for {today}")
-
-    # ── Fonts ─────────────────────────────────────────────────────
-    font_header = _try_load_font(22)
-    font_hour = _try_load_font(13)
-    font_event = _try_load_font(14)
-    font_event_small = _try_load_font(11)
-    font_allday = _try_load_font(13)
-
-    # ── Canvas ────────────────────────────────────────────────────
-    img = Image.new("RGB", (IMG_W, IMG_H), WHITE)
-    draw = ImageDraw.Draw(img)
-
-    # ── Header ────────────────────────────────────────────────────
+def _draw_header(draw, now, all_day_events, fonts):
+    """Draw the black header bar with date and all-day events."""
     draw.rectangle([0, 0, IMG_W, HEADER_H], fill=BLACK)
     date_str = now.strftime("%A, %B %-d, %Y")
-    draw.text((16, 12), date_str, fill=WHITE, font=font_header)
+    draw.text((16, 12), date_str, fill=WHITE, font=fonts["header"])
 
-    # All-day events ribbon
     if all_day_events:
-        allday_text = "All day: " + " · ".join(e["summary"] for e in all_day_events)
-        draw.text((16, 40), allday_text, fill=RED, font=font_allday)
+        allday_text = (
+            "All day: "
+            + " · ".join(e["summary"] for e in all_day_events)
+        )
+        draw.text((16, 40), allday_text, fill=RED, font=fonts["allday"])
 
-    # ── Hour grid ─────────────────────────────────────────────────
+
+def _draw_hour_grid(draw, fonts):
+    """Draw hour labels, horizontal grid lines, and half-hour dashes."""
     for h in range(HOUR_START, HOUR_END + 1):
         y = _y_for_time(time(h, 0))
-        # Hour label
         label = f"{h:02d}"
-        draw.text((8, y - 7), label, fill=BLACK, font=font_hour)
-        # Horizontal line
+        draw.text((8, y - 7), label, fill=BLACK, font=fonts["hour"])
         line_color = LIGHT_GRAY if h != HOUR_START else BLACK
-        draw.line([(GRID_LEFT, y), (IMG_W, y)], fill=line_color, width=1)
+        draw.line(
+            [(GRID_LEFT, y), (IMG_W, y)], fill=line_color, width=1
+        )
 
     # Half-hour dashed lines
     for h in range(HOUR_START, HOUR_END):
         y = _y_for_time(time(h, 30))
         for x in range(GRID_LEFT, IMG_W, 8):
-            draw.line([(x, y), (min(x + 3, IMG_W), y)], fill=LIGHT_GRAY, width=1)
+            draw.line(
+                [(x, y), (min(x + 3, IMG_W), y)],
+                fill=LIGHT_GRAY, width=1,
+            )
 
     # Left border of grid
-    draw.line([(GRID_LEFT, GRID_TOP), (GRID_LEFT, GRID_TOP + GRID_H)], fill=BLACK, width=1)
+    draw.line(
+        [(GRID_LEFT, GRID_TOP), (GRID_LEFT, GRID_TOP + GRID_H)],
+        fill=BLACK, width=1,
+    )
 
-    # ── Detect column overlaps ────────────────────────────────────
-    # Assign each event a column index for side-by-side rendering
-    columns = []  # list of (col_index, total_cols, event)
-    active_cols = []  # list of (end_time, col_index)
+
+def _compute_column_layout(timed_events):
+    """Assign each timed event a column index for side-by-side rendering.
+
+    Returns a list of (col_index, total_cols, event) tuples.
+    """
+    def _events_overlap(a, b):
+        return a["start"] < b["end"] and b["start"] < a["end"]
+
+    # First pass: assign column indices
+    columns = []
+    active_cols = []
 
     for ev in timed_events:
         ev_start = ev["start"]
         ev_end = ev["end"]
-
-        # Expire finished columns
-        active_cols = [(et, ci) for et, ci in active_cols if et > ev_start]
-
-        # Find first free column
+        active_cols = [
+            (et, ci) for et, ci in active_cols if et > ev_start
+        ]
         used = {ci for _, ci in active_cols}
         col = 0
         while col in used:
             col += 1
-
         active_cols.append((ev_end, col))
         columns.append((col, ev))
 
-    # Second pass: compute total columns per group
-    # Group events that overlap with each other
-    def _events_overlap(a, b):
-        return a["start"] < b["end"] and b["start"] < a["end"]
-
-    groups = []  # list of sets of indices into `columns`
+    # Second pass: group overlapping events, compute total_cols
+    groups = []
     for i, (_, ev) in enumerate(columns):
         placed = False
         for group in groups:
@@ -228,61 +214,125 @@ def generate_calendar_image(ical_url, local_tz=None):
         if not placed:
             groups.append({i})
 
-    col_info = [None] * len(columns)  # (col_index, total_cols)
+    col_info = [None] * len(columns)
     for group in groups:
         total = max(columns[j][0] for j in group) + 1
         for j in group:
             col_info[j] = (columns[j][0], total)
 
-    # ── Draw event blocks ─────────────────────────────────────────
-    EVENT_PAD = 3
-    for i, (_, ev) in enumerate(columns):
-        col_idx, total_cols = col_info[i]
+    return [
+        (col_info[i][0], col_info[i][1], ev)
+        for i, (_, ev) in enumerate(columns)
+    ]
 
-        ev_start = max(ev["start"].time(), time(HOUR_START, 0))
-        ev_end = min(ev["end"].time(), time(HOUR_END, 0))
-        if ev_end <= ev_start:
-            continue
 
-        y1 = _y_for_time(ev_start) + 1
-        y2 = _y_for_time(ev_end) - 1
-        if y2 - y1 < 4:
-            y2 = y1 + 4
+def _draw_event_block(draw, ev, col_idx, total_cols, fonts):
+    """Draw a single event block on the calendar grid."""
+    event_pad = 3
+    ev_start = max(ev["start"].time(), time(HOUR_START, 0))
+    ev_end = min(ev["end"].time(), time(HOUR_END, 0))
+    if ev_end <= ev_start:
+        return
 
-        col_w = GRID_W // total_cols
-        x1 = GRID_LEFT + col_idx * col_w + EVENT_PAD
-        x2 = GRID_LEFT + (col_idx + 1) * col_w - EVENT_PAD
+    y1 = _y_for_time(ev_start) + 1
+    y2 = _y_for_time(ev_end) - 1
+    if y2 - y1 < 4:
+        y2 = y1 + 4
 
-        # Red block fill
-        draw.rectangle([x1, y1, x2, y2], fill=RED)
-        # Dark border
-        draw.rectangle([x1, y1, x2, y2], outline=BLACK, width=1)
+    col_w = GRID_W // total_cols
+    x1 = GRID_LEFT + col_idx * col_w + event_pad
+    x2 = GRID_LEFT + (col_idx + 1) * col_w - event_pad
 
-        # Event text (white on red)
-        text_x = x1 + 4
-        text_y = y1 + 2
-        block_h = y2 - y1
+    draw.rectangle([x1, y1, x2, y2], fill=RED)
+    draw.rectangle([x1, y1, x2, y2], outline=BLACK, width=1)
 
-        time_str = f"{ev['start'].strftime('%-H:%M')}–{ev['end'].strftime('%-H:%M')}"
+    text_x = x1 + 4
+    text_y = y1 + 2
+    block_h = y2 - y1
 
-        if block_h > 30:
-            draw.text((text_x, text_y), ev["summary"][:30], fill=WHITE, font=font_event)
-            draw.text((text_x, text_y + 18), time_str, fill=WHITE, font=font_event_small)
-        elif block_h > 16:
-            draw.text((text_x, text_y), ev["summary"][:20], fill=WHITE, font=font_event_small)
-        # Too small for text – just the red block is visible
+    time_str = (
+        f"{ev['start'].strftime('%-H:%M')}"
+        f"–{ev['end'].strftime('%-H:%M')}"
+    )
 
-    # ── Current-time marker ───────────────────────────────────────
+    if block_h > 30:
+        draw.text(
+            (text_x, text_y), ev["summary"][:30],
+            fill=WHITE, font=fonts["event"],
+        )
+        draw.text(
+            (text_x, text_y + 18), time_str,
+            fill=WHITE, font=fonts["event_small"],
+        )
+    elif block_h > 16:
+        draw.text(
+            (text_x, text_y), ev["summary"][:20],
+            fill=WHITE, font=fonts["event_small"],
+        )
+
+
+def _draw_current_time_marker(draw, now):
+    """Draw the red arrow + line at the current time."""
     if HOUR_START <= now.hour < HOUR_END:
         y_now = _y_for_time(now.time())
-        # Red arrow + line
-        draw.polygon([(GRID_LEFT, y_now), (GRID_LEFT + 8, y_now - 4), (GRID_LEFT + 8, y_now + 4)], fill=RED)
-        draw.line([(GRID_LEFT + 8, y_now), (IMG_W, y_now)], fill=RED, width=2)
+        draw.polygon(
+            [(GRID_LEFT, y_now),
+             (GRID_LEFT + 8, y_now - 4),
+             (GRID_LEFT + 8, y_now + 4)],
+            fill=RED,
+        )
+        draw.line(
+            [(GRID_LEFT + 8, y_now), (IMG_W, y_now)],
+            fill=RED, width=2,
+        )
 
-    # ── "No meetings" label if empty ──────────────────────────────
+
+# ── Main entry point ─────────────────────────────────────────────
+
+def generate_calendar_image(ical_url, local_tz=None):
+    """Generate an 800x480 PIL Image showing today's calendar.
+
+    Returns a PIL.Image.Image in RGB mode.
+    """
+    if local_tz is None:
+        local_tz = dateutil_tz.tzlocal()
+
+    now = datetime.now(tz=local_tz)
+    events = fetch_events_today(ical_url, local_tz=local_tz)
+    all_day_events = [e for e in events if e["all_day"]]
+    timed_events = [e for e in events if not e["all_day"]]
+
+    logger.info(
+        f"Calendar: {len(timed_events)} timed, "
+        f"{len(all_day_events)} all-day for {now.date()}"
+    )
+
+    fonts = {
+        "header": _try_load_font(22),
+        "hour": _try_load_font(13),
+        "event": _try_load_font(14),
+        "event_small": _try_load_font(11),
+        "allday": _try_load_font(13),
+    }
+
+    img = Image.new("RGB", (IMG_W, IMG_H), WHITE)
+    draw = ImageDraw.Draw(img)
+
+    _draw_header(draw, now, all_day_events, fonts)
+    _draw_hour_grid(draw, fonts)
+
+    layout = _compute_column_layout(timed_events)
+    for col_idx, total_cols, ev in layout:
+        _draw_event_block(draw, ev, col_idx, total_cols, fonts)
+
+    _draw_current_time_marker(draw, now)
+
     if not timed_events and not all_day_events:
         cx = GRID_LEFT + GRID_W // 2
         cy = GRID_TOP + GRID_H // 2
-        draw.text((cx - 60, cy - 10), "No meetings today", fill=BLACK, font=font_header)
+        draw.text(
+            (cx - 60, cy - 10), "No meetings today",
+            fill=BLACK, font=fonts["header"],
+        )
 
     return img

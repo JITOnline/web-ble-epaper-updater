@@ -131,42 +131,54 @@ class ScreenWriter:
     async def request_set_address(self, address):
         await self._send_request([0x19, *address[0:6:-1]])
 
+    def _handle_block_size(self, data):
+        assert len(data) == 3
+        logger.debug("Success: block size request")
+        self.block_size = int.from_bytes(data[1:], "little")
+        logger.debug(f"Received block size: {self.block_size}")
+
+    @staticmethod
+    def _handle_status(data, label):
+        if data[1] == 0x00:
+            logger.debug(f"Success: {label}")
+        else:
+            raise Exception(f"Error: {label} {data[1]}")
+
+    async def _handle_transfer_status(self, data):
+        if data[1] == 0x00:
+            next_part = int.from_bytes(data[2:6], "little")
+            logger.debug(
+                f"Success: image transfer request Part {next_part}"
+            )
+            await self.transfer_queue.put(next_part)
+        elif data[1] == 0x08:
+            logger.debug("Success: image transfer request")
+            logger.debug("Screen write complete")
+            await self.transfer_queue.put(None)
+        else:
+            raise Exception(f"Error: image transfer ({data[1]})")
+
     async def notify_handler(self, _characteristic, data):
-        logger.debug(f"Received notify: {[data[i] for i in range(len(data))]}")
-        if data[0] == 0x01:
-            assert len(data) == 3
-            logger.debug("Success: block size request")
-            self.block_size = int.from_bytes(data[1:], "little")
-            logger.debug(f"Received block size: {self.block_size}")
-        elif data[0] == 0x02:
-            if data[1] == 0x00:
-                logger.debug("Success: write screen request")
-            else:
-                raise Exception(f"Error: write screen {data[1]}")
-        elif data[0] == 0x04:
-            if data[1] == 0x00:
-                logger.debug("Success: update cancel request")
-            else:
-                raise Exception(f"Error: update cancel {data[1]}")
-        elif data[0] == 0x05:
-            if data[1] == 0x00:
-                next_part = int.from_bytes(data[2:6], "little")
-                logger.debug(f"Success: image transfer request Part {next_part}")
-                # Push a new block to be sent by `handle_transfer`
-                await self.transfer_queue.put(next_part)
-            elif data[1] == 0x08:
-                logger.debug("Success: image transfer request")
-                logger.debug("Screen write complete")
-                # Signal to `handle_transfer` that the transfer is complete
-                await self.transfer_queue.put(None)
-            else:
-                raise Exception(f"Error: image transfer ({data[1]})")
-        elif data[0] == 0x19:
-            logger.debug("Success: set new address request")
-        elif data[0] == 0x40:
-            logger.debug("Success: set remote device setting request")
-        elif data[0] == 0x50:
-            logger.debug("Success: exit remote device setting request")
+        logger.debug(
+            f"Received notify: {[data[i] for i in range(len(data))]}"
+        )
+        opcode = data[0]
+
+        if opcode == 0x01:
+            self._handle_block_size(data)
+        elif opcode == 0x02:
+            self._handle_status(data, "write screen request")
+        elif opcode == 0x04:
+            self._handle_status(data, "update cancel request")
+        elif opcode == 0x05:
+            await self._handle_transfer_status(data)
+        elif opcode in (0x19, 0x40, 0x50):
+            labels = {
+                0x19: "set new address request",
+                0x40: "set remote device setting request",
+                0x50: "exit remote device setting request",
+            }
+            logger.debug(f"Success: {labels[opcode]}")
         else:
             logger.error(f"Unknown state: {data}")
 
