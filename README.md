@@ -4,30 +4,31 @@ A Django-based web application for managing and updating Gicisky BLE e-paper dis
 
 ## Dashboard & Hardware
 
-| E-Ink Display (Hardware) | Main Dashboard |
-|:---:|:---:|
+| E-Ink Display (Hardware)        | Main Dashboard                                                |
+| :------------------------------: | :-----------------------------------------------------------: |
 | ![E-Ink Display](docs/Display.jpg) | ![Main Dashboard](docs/Gicisky%20E-Ink%20BLE%20Configurator%201.png) |
 
-| Sidebar Settings (Part 1) | Sidebar Settings (Part 2) |
-|:---:|:---:|
+| Sidebar Settings (Part 1)        | Sidebar Settings (Part 2)        |
+| :------------------------------: | :------------------------------: |
 | ![Settings 1](docs/Gicisky%20E-Ink%20BLE%20Configurator%202.png) | ![Settings 2](docs/Gicisky%20E-Ink%20BLE%20Configurator%203.png) |
 
 ## Features
 
-| Feature | Description |
-|---|---|
-| **Image Upload & Gallery** | Upload images (drag-and-drop or file picker) that are displayed in a gallery grid. Click any image to transfer it to the connected e-paper display. |
-| **Image Deletion** | Hover over a gallery card to reveal a ✕ button that deletes the image from both the gallery and disk. |
-| **iCal Free/Busy Automation** | Automatically switch the display based on calendar status. Includes a pulsing status badge and background cron worker. |
-| **iCal Calendar Generator** | Paste an iCal URL to generate an 800×480 day-view image for your display. |
-| **Test-Before-Save** | Diagnostic "Connect & Test" uses your unsaved MAC address input to verify hardware before committing settings. |
-| **Glassmorphism UI** | A premium, modern dashboard design with glass effects, smooth animations, and independent scrollable panels. |
-| **Split-Panel Layout** | Optimized 1/3 (Settings) to 2/3 (Gallery) dashboard ratio for balance and usability. |
-| **Full-Width Debug Console** | Diagnostic logs and raw hex command utility span the entire bottom of the window for deep troubleshooting. |
-| **Auto-Scan** | Leave the MAC address empty to auto-discover nearby Gicisky tags. |
-| **Bluetooth Reset** | One-click `bluetoothctl` adapter power-cycling from the dashboard. |
-| **Collapsible Sidebar** | Click the Settings header to minimize the sidebar and maximize image viewing space. |
-| **BLE Error Handling** | Real-time user feedback for Bluetooth issues like out-of-range tags or busy adapters. |
+| Feature                       | Description                                                                                                                                      |
+| :---------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Image Upload & Gallery**    | Upload images (drag-and-drop or file picker) that are displayed in a gallery grid. Click any image to transfer it to the connected e-paper display. |
+| **Image Deletion**            | Hover over a gallery card to reveal a ✕ button that deletes the image from both the gallery and disk.                                            |
+| **iCal Free/Busy Automation** | Automatically switch the display based on calendar status. Includes a pulsing status badge and background cron worker.                         |
+| **iCal Calendar Generator**   | Paste an iCal URL to generate an 800×480 day-view image for your display.                                                                        |
+| **Test-Before-Save**          | Diagnostic "Connect & Test" uses your unsaved MAC address input to verify hardware before committing settings.                                    |
+| **Glassmorphism UI**          | A premium, modern dashboard design with glass effects, smooth animations, and independent scrollable panels.                                     |
+| **Split-Panel Layout**        | Optimized 1/3 (Settings) to 2/3 (Gallery) dashboard ratio for balance and usability.                                                             |
+| **Full-Width Debug Console**  | Diagnostic logs and raw hex command utility span the entire bottom of the window for deep troubleshooting.                                       |
+| **Auto-Scan**                 | Leave the MAC address empty to auto-discover nearby Gicisky tags.                                                                                |
+| **Bluetooth Reset**           | One-click `bluetoothctl` adapter power-cycling from the dashboard.                                                                                |
+| **Collapsible Sidebar**       | Click the Settings header to minimize the sidebar and maximize image viewing space.                                                              |
+| **BLE Error Handling**        | Real-time user feedback for Bluetooth issues like out-of-range tags or busy adapters.                                                            |
+| **Unit Testing**              | Comprehensive suite of 70 validated tests covering BLE logic, iCal parsing, image encoding, and dashboard views.                                 |
 
 ## Architecture & Requirements
 
@@ -111,6 +112,9 @@ WantedBy=multi-user.target
 ```bash
 sudo systemctl daemon-reload
 sudo systemctl enable --now epaper-updater
+
+# Collect static files for WhiteNoise
+/srv/web-ble-epaper-updater/venv/bin/python manage.py collectstatic --noinput
 ```
 
 Navigate to `http://<pi-ip>:8000`.
@@ -194,6 +198,7 @@ The calendar renders:
 - **Red blocks** for meetings (with title and time labels)
 - **Red arrow** for the current time
 - **All-day events** in the header ribbon
+
 ### iCal Free/Busy Automation
 
 1. **Designate Images**: Upload two images to the gallery—one for when you are "Free" and one for when you are "Busy" (in a timed meeting). Note their card numbers (e.g., `#3`).
@@ -222,20 +227,20 @@ The calendar renders:
 
 ### Device Configuration
 
-| Setting | Purpose |
-|---|---|
-| **MAC Address** | Target device. Leave empty to auto-scan. |
-| **Hardware Raw Type** | Hex value (e.g. `410B`). Leave empty for defaults or auto-detect. |
-| **Rotate 180°** | Flip the image before encoding. |
-| **Negative** | Invert all colors. |
-| **Dithering** | `None`, `Floyd-Steinberg`, or `Combined` (independent grayscale + red quantization). |
-| **Width/Height Override** | Force a custom resolution instead of auto-detected. |
-| **Force Compress** | Enable/disable RLE compression in the data stream. |
-| **Force BWR** | Force black/white/red encoding even if the tag reports BW-only. |
-| **Force Mirror** | Mirror the image horizontally (required by some display types). |
-| **iCal Feed URL** | URL for calendar image generation and automation. |
-| **Automation Active** | Toggle the background iCal free/busy check. |
-| **Free/Busy Images** | Select gallery images for each calendar state. |
+| Setting                  | Purpose                                                                                |
+| :----------------------- | :------------------------------------------------------------------------------------- |
+| **MAC Address**          | Target device. Leave empty to auto-scan.                                               |
+| **Hardware Raw Type**    | Hex value (e.g. `410B`). Leave empty for defaults or auto-detect.                      |
+| **Rotate 180°**          | Flip the image before encoding.                                                        |
+| **Negative**             | Invert all colors.                                                                     |
+| **Dithering**            | `None`, `Floyd-Steinberg`, or `Combined` (grayscale + red quantization).               |
+| **Width/Height Override**| Force a custom resolution instead of auto-detected.                                    |
+| **Force Compress**       | Enable/disable RLE compression in the data stream.                                     |
+| **Force BWR**            | Force black/white/red encoding even if the tag reports BW-only.                        |
+| **Force Mirror**         | Mirror the image horizontally (required by some display types).                         |
+| **iCal Feed URL**        | URL for calendar image generation and automation.                                      |
+| **Automation Active**    | Toggle the background iCal free/busy check.                                             |
+| **Free/Busy Images**     | Select gallery images for each calendar state.                                         |
 
 ---
 
