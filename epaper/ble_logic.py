@@ -71,25 +71,23 @@ def configure_tag_model(config, raw_type):
 def prepare_image(image_obj, tag_model, config):
     """Load or generate the PIL image and apply transforms."""
     if image_obj.image:
-        img = Image.open(image_obj.image.path).convert('RGB')
+        img = Image.open(image_obj.image.path).convert("RGB")
     else:
         img = Image.new(
-            'RGB',
+            "RGB",
             (tag_model.width, tag_model.height),
-            color='white',
+            color="white",
         )
         draw = ImageDraw.Draw(img)
         text = image_obj.text_overlay or "Hello"
-        draw.text(
-            (10, tag_model.height // 2 - 10), text, fill='black'
-        )
+        draw.text((10, tag_model.height // 2 - 10), text, fill="black")
         color_types = [
-            ColorType.BWR, ColorType.BWRY, ColorType.BWRGBYO,
+            ColorType.BWR,
+            ColorType.BWRY,
+            ColorType.BWRGBYO,
         ]
         if tag_model.color_type in color_types:
-            draw.text(
-                (10, tag_model.height // 2 + 10), text, fill='red'
-            )
+            draw.text((10, tag_model.height // 2 + 10), text, fill="red")
 
     if config.rotate:
         img = img.rotate(180, expand=True)
@@ -104,14 +102,14 @@ def prepare_image(image_obj, tag_model, config):
     return encode_image(img, tag_model=tag_model, dithering=dither_val)
 
 
-async def perform_update(image_id, config, msg_queue, gicisky_logger, handler):
+async def perform_update(
+    image_id, config, msg_queue, gicisky_logger, handler
+):
     """Perform the full image encode + BLE transfer sequence."""
     mac_address = config.mac_address
     try:
         image_obj = await EpaperImage.objects.aget(id=image_id)
-        mac_address, raw_type = await resolve_device(
-            config, msg_queue
-        )
+        mac_address, raw_type = await resolve_device(config, msg_queue)
         if mac_address is None:
             return
 
@@ -149,6 +147,7 @@ async def perform_update(image_id, config, msg_queue, gicisky_logger, handler):
 async def run_with_cleanup(image_id, msg_queue, gicisky_logger, handler):
     """Disconnect stale diagnostic clients, then run the update."""
     from .models import DeviceConfig
+
     config = await DeviceConfig.objects.aget(id=1)
     mac_addr = config.mac_address
     if not mac_addr:
@@ -163,9 +162,7 @@ async def run_with_cleanup(image_id, msg_queue, gicisky_logger, handler):
                 await old_client.disconnect()
             except Exception:
                 pass
-    await perform_update(
-        image_id, config, msg_queue, gicisky_logger, handler
-    )
+    await perform_update(image_id, config, msg_queue, gicisky_logger, handler)
 
 
 async def disconnect_diagnostic(mac_addr):

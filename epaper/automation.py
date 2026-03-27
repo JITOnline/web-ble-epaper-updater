@@ -57,7 +57,7 @@ def check_and_update_automation():
         state_str = f"STATUS: [{'BUSY' if is_busy else 'FREE'}]"
         if is_busy and busy_event:
             state_str += f" - Event: {busy_event['summary']}"
-        
+
         # Calculate next state time
         if is_busy and busy_event:
             next_change = busy_event["end"]
@@ -69,18 +69,16 @@ def check_and_update_automation():
         next_str = ""
         if next_change:
             next_str = f" | Next update: {next_change.strftime('%H:%M')}"
-        
+
         logger.info(f"Automation {state_str}{next_str}")
-        
+
         # Update debug console (using a khusus logger that views can pick up)
         status_logger = logging.getLogger("gicisky_tag.automation")
         status_logger.info(f"{state_str}{next_str}")
 
         if not target_image:
-            status = 'busy' if is_busy else 'free'
-            logger.warning(
-                f"No {status} image configured for automation."
-            )
+            status = "busy" if is_busy else "free"
+            logger.warning(f"No {status} image configured for automation.")
             return
 
         if config.last_automation_image == target_image:
@@ -97,9 +95,12 @@ def check_and_update_automation():
         handler = logging.StreamHandler()
 
         import asyncio
-        asyncio.run(run_with_cleanup(
-            target_image.id, msg_queue, gicisky_logger, handler
-        ))
+
+        asyncio.run(
+            run_with_cleanup(
+                target_image.id, msg_queue, gicisky_logger, handler
+            )
+        )
 
         # Update tracking
         config.last_automation_image = target_image
@@ -115,20 +116,22 @@ def set_automation_cron(enabled=True):
     """Enable or disable the crontab entry for automation logic."""
     try:
         cron = CronTab(user=True)
-        comment = 'epaper-automation-check'
-        
+        comment = "epaper-automation-check"
+
         # Remove existing if any
         cron.remove_all(comment=comment)
-        
+
         if enabled:
             # Get path to manage.py
             cur_file = os.path.abspath(__file__)
             # epaper/automation.py -> epaper -> web-ble-epaper-updater
-            base_dir = os.path.dirname(os.path.dirname(os.path.dirname(cur_file)))
-            manage_py = os.path.join(base_dir, 'manage.py')
+            base_dir = os.path.dirname(
+                os.path.dirname(os.path.dirname(cur_file))
+            )
+            manage_py = os.path.join(base_dir, "manage.py")
             python_bin = sys.executable
 
-            command = f'{python_bin} {manage_py} check_automation'
+            command = f"{python_bin} {manage_py} check_automation"
             job = cron.new(command=command, comment=comment)
             job.minute.every(5)
             cron.write()

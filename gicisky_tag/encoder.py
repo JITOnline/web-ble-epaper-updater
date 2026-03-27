@@ -70,7 +70,11 @@ def dither_image_bwr(image, dithering: Dither, debug_folder=None):
         bwr_palette_image.putpalette(black_color + white_color + red_color)
         quant_image = image.convert("RGB").quantize(
             palette=bwr_palette_image,
-            dither=Image.NONE if dithering == Dither.NONE else Image.FLOYDSTEINBERG,
+            dither=(
+                Image.NONE
+                if dithering == Dither.NONE
+                else Image.FLOYDSTEINBERG
+            ),
         )
 
         if debug_folder is not None:
@@ -134,8 +138,12 @@ class TagModel:
 
         # rawType = (data.getUint8(4) << 8) | data.getUint8(0);
         screen_resolution = (raw_type >> 5) & 63
-        self.display_type = (raw_type >> 3) & 3  # 0: TFT, 1: EPA, 2: EPA1, 3: EPA2
-        self.color_type = ColorType(((raw_type >> 1) & 3) + ((raw_type >> 10) & 12))
+        self.display_type = (
+            raw_type >> 3
+        ) & 3  # 0: TFT, 1: EPA, 2: EPA1, 3: EPA2
+        self.color_type = ColorType(
+            ((raw_type >> 1) & 3) + ((raw_type >> 10) & 12)
+        )
         self.use_compression = (raw_type & 0x4000) == 0
         self.mirror_image = self.display_type in (0, 1, 3)
 
@@ -178,26 +186,34 @@ class TagModel:
             # But the current code said 250x122.
             # Let's check the raw_type bits again.
             # If screen_resolution is something else...
-            logger.warning(f"Unknown screen resolution: {screen_resolution}. Defaulting to 250x122.")
+            logger.warning(
+                f"Unknown screen resolution: {screen_resolution}. Defaulting to 250x122."
+            )
             self.width, self.height = 250, 122
 
     def __str__(self):
         return f"TagModel({self.width}x{self.height}, color={self.color_type.name}, compression={self.use_compression})"
 
 
-def encode_image(image, tag_model=None, dithering=Dither.NONE, debug_folder=None):
+def encode_image(
+    image, tag_model=None, dithering=Dither.NONE, debug_folder=None
+):
     if tag_model is None:
         tag_model = TagModel()
 
     logger.info(f"Encoding image for {tag_model}...")
 
     # Resize image to match tag resolution
-    image = image.convert("RGB").resize((tag_model.width, tag_model.height), Image.Resampling.LANCZOS)
+    image = image.convert("RGB").resize(
+        (tag_model.width, tag_model.height), Image.Resampling.LANCZOS
+    )
 
     if tag_model.mirror_image:
         image = image.transpose(Image.FLIP_LEFT_RIGHT)
 
-    bwr_image = dither_image_bwr(image, dithering=dithering, debug_folder=debug_folder)
+    bwr_image = dither_image_bwr(
+        image, dithering=dithering, debug_folder=debug_folder
+    )
     bwr_pixels = np.asarray(bwr_image.convert("RGB")).astype(int)
 
     # BW bitmap: From ATC1441: White is 1, Black and Red are 0
@@ -220,12 +236,21 @@ def encode_image(image, tag_model=None, dithering=Dither.NONE, debug_folder=None
     # The numpy equivalent: flatten() then reshape to (width, height).
     # Using .T would give actual image columns (col_i, all_rows), which is WRONG.
 
-    bw_packed = np.packbits(bw_bitmap.flatten().reshape(tag_model.width, tag_model.height), axis=-1)
-    red_packed = np.packbits(red_bitmap.flatten().reshape(tag_model.width, tag_model.height), axis=-1)
+    bw_packed = np.packbits(
+        bw_bitmap.flatten().reshape(tag_model.width, tag_model.height), axis=-1
+    )
+    red_packed = np.packbits(
+        red_bitmap.flatten().reshape(tag_model.width, tag_model.height),
+        axis=-1,
+    )
 
     if tag_model.use_compression:
-        bw_data = compress_bitmap_generic(bw_packed, tag_model.width, tag_model.height)
-        red_data = compress_bitmap_generic(red_packed, tag_model.width, tag_model.height)
+        bw_data = compress_bitmap_generic(
+            bw_packed, tag_model.width, tag_model.height
+        )
+        red_data = compress_bitmap_generic(
+            red_packed, tag_model.width, tag_model.height
+        )
     else:
         bw_data = list(bw_packed.flatten())
         red_data = list(red_packed.flatten())
@@ -254,7 +279,11 @@ def compress_bitmap_generic(packed_bitmap, width, height):
     for col in range(width):
         line_data = list(packed_bitmap[col])
         encoded_line = (
-            [0x75, 3 + len(compression_markers) + len(line_data), num_line_bytes]
+            [
+                0x75,
+                3 + len(compression_markers) + len(line_data),
+                num_line_bytes,
+            ]
             + compression_markers
             + line_data
         )

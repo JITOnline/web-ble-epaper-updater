@@ -7,19 +7,21 @@ logger = logging.getLogger(__name__)
 
 
 class Command(BaseCommand):
-    help = 'Run the iCal free/busy automation loop'
+    help = "Run the iCal free/busy automation loop"
 
     def add_arguments(self, parser):
         parser.add_argument(
-            '--interval', type=int, default=300,
-            help='Interval in seconds between checks (default: 300)'
+            "--interval",
+            type=int,
+            default=300,
+            help="Interval in seconds between checks (default: 300)",
         )
 
     def handle(self, *args, **options):
-        interval = options['interval']
+        interval = options["interval"]
         self.stdout.write(
             self.style.SUCCESS(
-                f'Starting automation loop (interval: {interval}s)...'
+                f"Starting automation loop (interval: {interval}s)..."
             )
         )
 

@@ -6,13 +6,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('epaper', '0004_deviceconfig_automation_enabled_and_more'),
+        ("epaper", "0004_deviceconfig_automation_enabled_and_more"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='deviceconfig',
-            name='last_automation_time',
+            model_name="deviceconfig",
+            name="last_automation_time",
             field=models.DateTimeField(blank=True, null=True),
         ),
     ]

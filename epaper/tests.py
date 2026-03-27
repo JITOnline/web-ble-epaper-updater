@@ -1,4 +1,5 @@
 """Tests for the epaper Django application and gicisky_tag library."""
+
 from unittest import IsolatedAsyncioTestCase
 from unittest.mock import patch, MagicMock, AsyncMock
 from io import BytesIO
@@ -25,14 +26,14 @@ from gicisky_tag.encoder import (
 )
 from gicisky_tag.writer import ScreenWriter
 
-
 # ── Helper ────────────────────────────────────────────────────────
 
-def _make_png(width=250, height=122, color='white'):
+
+def _make_png(width=250, height=122, color="white"):
     """Create a minimal in-memory PNG for testing."""
-    img = Image.new('RGB', (width, height), color=color)
+    img = Image.new("RGB", (width, height), color=color)
     buf = BytesIO()
-    img.save(buf, format='PNG')
+    img.save(buf, format="PNG")
     buf.seek(0)
     return buf
 
@@ -40,6 +41,7 @@ def _make_png(width=250, height=122, color='white'):
 # ══════════════════════════════════════════════════════════════════
 #  Model tests
 # ══════════════════════════════════════════════════════════════════
+
 
 class EpaperImageModelTest(TestCase):
     def test_create_text_overlay(self):
@@ -83,9 +85,10 @@ class DeviceConfigModelTest(TestCase):
 #  Form tests
 # ══════════════════════════════════════════════════════════════════
 
+
 class EpaperImageFormTest(TestCase):
     def test_text_only_valid(self):
-        form = EpaperImageForm(data={'text_overlay': 'test'})
+        form = EpaperImageForm(data={"text_overlay": "test"})
         self.assertTrue(form.is_valid())
 
     def test_empty_valid(self):
@@ -95,80 +98,91 @@ class EpaperImageFormTest(TestCase):
 
 class DeviceConfigFormTest(TestCase):
     def test_defaults_valid(self):
-        form = DeviceConfigForm(data={
-            'mac_address': '',
-            'raw_type': '',
-            'rotate': False,
-            'negative': False,
-            'dithering': 'none',
-            'force_compression': True,
-            'force_second_color': True,
-            'force_mirror': True,
-            'ical_url': '',
-            'ical_free_image': '',
-            'ical_busy_image': '',
-            'automation_enabled': False,
-        })
+        form = DeviceConfigForm(
+            data={
+                "mac_address": "",
+                "raw_type": "",
+                "rotate": False,
+                "negative": False,
+                "dithering": "none",
+                "force_compression": True,
+                "force_second_color": True,
+                "force_mirror": True,
+                "ical_url": "",
+                "ical_free_image": "",
+                "ical_busy_image": "",
+                "automation_enabled": False,
+            }
+        )
         self.assertTrue(form.is_valid())
 
     def test_invalid_dithering(self):
-        form = DeviceConfigForm(data={
-            'mac_address': '',
-            'raw_type': '',
-            'rotate': False,
-            'negative': False,
-            'dithering': 'invalid_value',
-            'force_compression': True,
-            'force_second_color': True,
-            'force_mirror': True,
-            'ical_url': '',
-        })
+        form = DeviceConfigForm(
+            data={
+                "mac_address": "",
+                "raw_type": "",
+                "rotate": False,
+                "negative": False,
+                "dithering": "invalid_value",
+                "force_compression": True,
+                "force_second_color": True,
+                "force_mirror": True,
+                "ical_url": "",
+            }
+        )
         self.assertFalse(form.is_valid())
-        self.assertIn('dithering', form.errors)
+        self.assertIn("dithering", form.errors)
 
 
 # ══════════════════════════════════════════════════════════════════
 #  View tests (Django test client)
 # ══════════════════════════════════════════════════════════════════
 
+
 class IndexViewTest(TestCase):
     def test_get_index(self):
-        resp = self.client.get('/')
+        resp = self.client.get("/")
         self.assertEqual(resp.status_code, 200)
-        self.assertIn('config_form', resp.context)
-        self.assertNotIn('RUNNING', resp.content.decode())
+        self.assertIn("config_form", resp.context)
+        self.assertNotIn("RUNNING", resp.content.decode())
 
     def test_get_index_automation_badge(self):
         cfg = DeviceConfig.get_solo()
         cfg.automation_enabled = True
         cfg.save()
-        resp = self.client.get('/')
+        resp = self.client.get("/")
         self.assertEqual(resp.status_code, 200)
-        self.assertIn('RUNNING', resp.content.decode())
+        self.assertIn("RUNNING", resp.content.decode())
 
     def test_post_config_update(self):
         DeviceConfig.get_solo()
-        resp = self.client.post('/', {
-            'mac_address': 'AA:BB:CC:DD:EE:FF',
-            'raw_type': '',
-            'rotate': False,
-            'negative': False,
-            'dithering': 'none',
-            'force_compression': True,
-            'force_second_color': True,
-            'force_mirror': True,
-            'ical_url': '',
-        })
+        resp = self.client.post(
+            "/",
+            {
+                "mac_address": "AA:BB:CC:DD:EE:FF",
+                "raw_type": "",
+                "rotate": False,
+                "negative": False,
+                "dithering": "none",
+                "force_compression": True,
+                "force_second_color": True,
+                "force_mirror": True,
+                "ical_url": "",
+            },
+        )
         self.assertEqual(resp.status_code, 302)
         cfg = DeviceConfig.objects.get(id=1)
-        self.assertEqual(cfg.mac_address, 'AA:BB:CC:DD:EE:FF')
+        self.assertEqual(cfg.mac_address, "AA:BB:CC:DD:EE:FF")
 
 
 class UploadViewTest(TestCase):
     def test_upload_text(self):
-        resp = self.client.post('/upload/', {
-            'text_overlay': 'Hello E-Paper',
-        })
+        resp = self.client.post(
+            "/upload/",
+            {
+                "text_overlay": "Hello E-Paper",
+            },
+        )
         self.assertEqual(resp.status_code, 302)
         self.assertEqual(EpaperImage.objects.count(), 1)
 
@@ -177,7 +191,7 @@ class UploadViewTest(TestCase):
         uploaded = SimpleUploadedFile(
             "test.png", png.read(), content_type="image/png"
         )
-        resp = self.client.post('/upload/', {'image': uploaded})
+        resp = self.client.post("/upload/", {"image": uploaded})
         self.assertEqual(resp.status_code, 302)
         self.assertEqual(EpaperImage.objects.count(), 1)
         EpaperImage.objects.first().image.delete(save=False)
@@ -186,50 +200,50 @@ class UploadViewTest(TestCase):
 class DeleteViewTest(TestCase):
     def test_delete_image(self):
         obj = EpaperImage.objects.create(text_overlay="temp")
-        resp = self.client.post(f'/delete/{obj.id}/')
+        resp = self.client.post(f"/delete/{obj.id}/")
         self.assertEqual(resp.status_code, 302)
         self.assertEqual(EpaperImage.objects.count(), 0)
 
     def test_delete_nonexistent_returns_404(self):
-        resp = self.client.post('/delete/99999/')
+        resp = self.client.post("/delete/99999/")
         self.assertEqual(resp.status_code, 404)
 
     def test_get_not_allowed(self):
         obj = EpaperImage.objects.create(text_overlay="temp")
-        resp = self.client.get(f'/delete/{obj.id}/')
+        resp = self.client.get(f"/delete/{obj.id}/")
         self.assertEqual(resp.status_code, 405)
 
 
 class TriggerViewTest(TestCase):
     def test_get_not_allowed(self):
         obj = EpaperImage.objects.create(text_overlay="test")
-        resp = self.client.get(f'/trigger/{obj.id}/')
+        resp = self.client.get(f"/trigger/{obj.id}/")
         self.assertEqual(resp.status_code, 405)
 
 
 class BtResetViewTest(TestCase):
-    @patch('epaper.views.subprocess.run')
-    @patch('epaper.views._time.sleep')
+    @patch("epaper.views.subprocess.run")
+    @patch("epaper.views._time.sleep")
     def test_bt_reset_success(self, mock_sleep, mock_run):
-        resp = self.client.post('/bt-reset/')
+        resp = self.client.post("/bt-reset/")
         self.assertEqual(resp.status_code, 200)
         data = resp.json()
-        self.assertEqual(data['status'], 'success')
+        self.assertEqual(data["status"], "success")
         self.assertEqual(mock_run.call_count, 2)
 
     def test_get_not_allowed(self):
-        resp = self.client.get('/bt-reset/')
+        resp = self.client.get("/bt-reset/")
         self.assertEqual(resp.status_code, 405)
 
 
 class CalendarViewTest(TestCase):
     def test_get_not_allowed(self):
-        resp = self.client.get('/generate-calendar/')
+        resp = self.client.get("/generate-calendar/")
         self.assertEqual(resp.status_code, 405)
 
     def test_no_ical_url_redirects(self):
         DeviceConfig.get_solo()
-        resp = self.client.post('/generate-calendar/')
+        resp = self.client.post("/generate-calendar/")
         self.assertEqual(resp.status_code, 302)
 
 
@@ -269,7 +283,7 @@ class ConfigureTagModelTest(TestCase):
 
     def test_raw_type_hex_override(self):
         cfg = DeviceConfig.get_solo()
-        cfg.raw_type = '410B'
+        cfg.raw_type = "410B"
         tag = configure_tag_model(cfg, None)
         # raw_type should be parsed from config.raw_type
         self.assertIsInstance(tag, TagModel)
@@ -297,6 +311,7 @@ class PrepareImageTest(TestCase):
 # ══════════════════════════════════════════════════════════════════
 #  Encoder tests
 # ══════════════════════════════════════════════════════════════════
+
 
 class TagModelTest(TestCase):
     def test_default_construction(self):
@@ -378,9 +393,7 @@ class EncodeImageTest(TestCase):
     def test_encode_combined_dithering(self):
         img = Image.new("RGB", (250, 122), (200, 50, 50))
         tag = TagModel()
-        data = encode_image(
-            img, tag_model=tag, dithering=Dither.COMBINED
-        )
+        data = encode_image(img, tag_model=tag, dithering=Dither.COMBINED)
         self.assertGreater(len(data), 0)
 
     def test_encode_with_mirror(self):
@@ -422,8 +435,9 @@ class CompressBitmapTest(TestCase):
 #  Writer tests (unit, no BLE hardware)
 # ══════════════════════════════════════════════════════════════════
 
+
 class ScreenWriterNotifyHandlerTest(TestCase):
-    def _make_writer(self, image_data=b'\x00' * 100):
+    def _make_writer(self, image_data=b"\x00" * 100):
         device = MagicMock()
         return ScreenWriter(device, image_data)
 
@@ -450,6 +464,8 @@ class ScreenWriterNotifyHandlerTest(TestCase):
         with self.assertRaises(AssertionError):
             # Wrong length data
             sw._handle_block_size(bytes([0x01, 0x00]))
+
+
 # ══════════════════════════════════════════════════════════════════
 #  Calendar logic tests
 # ══════════════════════════════════════════════════════════════════
@@ -458,25 +474,31 @@ class ScreenWriterNotifyHandlerTest(TestCase):
 class CalendarLogicTest(TestCase):
     def test_y_for_time(self):
         from epaper.calendar import (
-            _y_for_time, GRID_TOP, GRID_H, HOUR_START, TOTAL_HOURS
+            _y_for_time,
+            GRID_TOP,
+            GRID_H,
+            HOUR_START,
+            TOTAL_HOURS,
         )
         from datetime import time
+
         # Start of day
         self.assertEqual(_y_for_time(time(HOUR_START, 0)), GRID_TOP)
         # End of day (roughly, considering float)
         self.assertAlmostEqual(
             _y_for_time(time(HOUR_START + TOTAL_HOURS, 0)),
             GRID_TOP + GRID_H,
-            delta=1
+            delta=1,
         )
         # Middle
         self.assertEqual(_y_for_time(time(14, 0)), 258)
 
-    @patch('epaper.calendar.requests.get')
-    @patch('epaper.calendar.recurring_ical_events.of')
+    @patch("epaper.calendar.requests.get")
+    @patch("epaper.calendar.recurring_ical_events.of")
     def test_fetch_events_today(self, mock_of, mock_get):
         from epaper.calendar import fetch_events_today
         from datetime import datetime
+
         # Mock requests.get
         mock_resp = MagicMock()
         mock_resp.text = "BEGIN:VCALENDAR\nEND:VCALENDAR"
@@ -497,36 +519,46 @@ class CalendarLogicTest(TestCase):
 
         events = fetch_events_today("http://example.com/ical")
         self.assertEqual(len(events), 1)
-        self.assertEqual(events[0]['summary'], "Test Event")
+        self.assertEqual(events[0]["summary"], "Test Event")
 
-    @patch('epaper.calendar.fetch_events_today')
+    @patch("epaper.calendar.fetch_events_today")
     def test_generate_calendar_image(self, mock_fetch):
         from epaper.calendar import generate_calendar_image
         from datetime import datetime
+
         mock_fetch.return_value = [
             {
                 "summary": "Meeting",
                 "start": datetime(2026, 3, 27, 10, 0),
                 "end": datetime(2026, 3, 27, 11, 0),
-                "all_day": False
+                "all_day": False,
             },
             {
                 "summary": "All Day",
                 "start": datetime(2026, 3, 27, 0, 0),
                 "end": datetime(2026, 3, 27, 23, 59),
-                "all_day": True
-            }
+                "all_day": True,
+            },
         ]
         img = generate_calendar_image("http://example.com/ical")
         self.assertEqual(img.size, (800, 480))
-        self.assertEqual(img.mode, 'RGB')
+        self.assertEqual(img.mode, "RGB")
 
     def test_compute_column_layout(self):
         from epaper.calendar import _compute_column_layout
         from datetime import datetime
+
         events = [
-            {"summary": "A", "start": datetime(2026, 3, 27, 10, 0), "end": datetime(2026, 3, 27, 11, 0)},
-            {"summary": "B", "start": datetime(2026, 3, 27, 10, 30), "end": datetime(2026, 3, 27, 11, 30)},
+            {
+                "summary": "A",
+                "start": datetime(2026, 3, 27, 10, 0),
+                "end": datetime(2026, 3, 27, 11, 0),
+            },
+            {
+                "summary": "B",
+                "start": datetime(2026, 3, 27, 10, 30),
+                "end": datetime(2026, 3, 27, 11, 30),
+            },
         ]
         layout = _compute_column_layout(events)
         self.assertEqual(len(layout), 2)
@@ -542,17 +574,18 @@ class CalendarLogicTest(TestCase):
 #  Writer & Network tests
 # ══════════════════════════════════════════════════════════════════
 
+
 class WriterTests(TestCase):
-    @patch('gicisky_tag.writer.BleakClient')
+    @patch("gicisky_tag.writer.BleakClient")
     async def test_send_data_to_screen_mocked(self, mock_client):
         # This test requires async context, but standard TestCase isn't async-aware
         # or methods starting with test_ unless specifically set up.
         # But we can test it as a regular unit test if we mock enough.
-        pass # Skipping complex async test for now, or use IsolatedAsyncioTestCase
+        pass  # Skipping complex async test for now, or use IsolatedAsyncioTestCase
 
     def test_screen_writer_init(self):
         device = MagicMock()
-        img_data = b'xyz'
+        img_data = b"xyz"
         sw = ScreenWriter(device, img_data)
         self.assertEqual(sw.device, device)
         self.assertEqual(sw.image, img_data)
@@ -562,23 +595,27 @@ class WriterTests(TestCase):
 #  Extended View tests
 # ══════════════════════════════════════════════════════════════════
 
+
 class ExtendedViewTests(TestCase):
-    @patch('epaper.views.threading.Thread')
+    @patch("epaper.views.threading.Thread")
     def test_trigger_update_post_success(self, mock_thread):
         obj = EpaperImage.objects.create(text_overlay="test")
-        resp = self.client.post(f'/trigger/{obj.id}/')
+        resp = self.client.post(f"/trigger/{obj.id}/")
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.get('Content-Type'), 'application/x-ndjson')
+        self.assertEqual(resp.get("Content-Type"), "application/x-ndjson")
         self.assertTrue(mock_thread.called)
-
 
 
 class AsyncViewTests(TestCase):
     async def test_resolve_device_no_mac(self):
-        with patch('epaper.ble_logic.find_device') as mock_find:
+        with patch("epaper.ble_logic.find_device") as mock_find:
             from epaper.ble_logic import resolve_device
             import queue
-            mock_find.return_value = {"address": "11:22:33:44:55:66", "raw_type": 0x1234}
+
+            mock_find.return_value = {
+                "address": "11:22:33:44:55:66",
+                "raw_type": 0x1234,
+            }
             cfg = MagicMock(mac_address="")
             q = queue.Queue()
             addr, rtype = await resolve_device(cfg, q)
@@ -586,15 +623,18 @@ class AsyncViewTests(TestCase):
             self.assertEqual(rtype, 0x1234)
 
     async def test_connect_device_success(self):
-        with patch('epaper.views.BleakClient') as mock_bleak:
+        with patch("epaper.views.BleakClient") as mock_bleak:
             from epaper.views import connect_device_view
             from epaper.models import DeviceConfig
+
             await DeviceConfig.objects.aget_or_create(id=1)
-            await DeviceConfig.objects.filter(id=1).aupdate(mac_address="11:22:33:44:55:66")
+            await DeviceConfig.objects.filter(id=1).aupdate(
+                mac_address="11:22:33:44:55:66"
+            )
 
             # Mock request
             request = MagicMock()
-            request.method = 'POST'
+            request.method = "POST"
 
             # Mock BleakClient
             mock_instance = mock_bleak.return_value
@@ -603,17 +643,20 @@ class AsyncViewTests(TestCase):
 
             resp = await connect_device_view(request)
             self.assertEqual(resp.status_code, 200, resp.content)
-            self.assertIn(b'Connected', resp.content)
+            self.assertIn(b"Connected", resp.content)
 
     async def test_send_cmd_success(self):
-        with patch('epaper.views.BleakClient') as mock_bleak:
+        with patch("epaper.views.BleakClient") as mock_bleak:
             from epaper.views import send_cmd_view
             from epaper.models import DeviceConfig
+
             await DeviceConfig.objects.aget_or_create(id=1)
-            await DeviceConfig.objects.filter(id=1).aupdate(mac_address="11:22:33:44:55:66")
+            await DeviceConfig.objects.filter(id=1).aupdate(
+                mac_address="11:22:33:44:55:66"
+            )
 
             request = MagicMock()
-            request.method = 'POST'
+            request.method = "POST"
             request.body = b'{"cmd": "010203"}'
 
             mock_instance = AsyncMock()
@@ -622,31 +665,33 @@ class AsyncViewTests(TestCase):
 
             resp = await send_cmd_view(request)
             self.assertEqual(resp.status_code, 200, resp.content)
-            self.assertIn(b'Successfully sent', resp.content)
+            self.assertIn(b"Successfully sent", resp.content)
 
     async def test_disconnect_device_no_conn(self):
         from epaper.views import disconnect_device_view
         from epaper.models import DeviceConfig
+
         await DeviceConfig.objects.aget_or_create(id=1)
 
         request = MagicMock()
-        request.method = 'POST'
+        request.method = "POST"
 
         resp = await disconnect_device_view(request)
         self.assertEqual(resp.status_code, 200, resp.content)
-        self.assertIn(b'No active connection', resp.content)
+        self.assertIn(b"No active connection", resp.content)
 
 
 # ══════════════════════════════════════════════════════════════════
 #  Direct Writer tests
 # ══════════════════════════════════════════════════════════════════
 
+
 class ScreenWriterDetailTest(IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
         self.mock_device = MagicMock()
         self.mock_device.write_gatt_char = AsyncMock()
         self.mock_device.mtu_size = 247
-        self.image_data = b'\x01\x02\x03\x04' * 100 # 400 bytes
+        self.image_data = b"\x01\x02\x03\x04" * 100  # 400 bytes
         self.sw = ScreenWriter(self.mock_device, self.image_data)
 
         # We need a side effect to put None into notify_handler_results
@@ -654,6 +699,7 @@ class ScreenWriterDetailTest(IsolatedAsyncioTestCase):
         async def mock_write(char, data, response=False):
             if char == ScreenWriter.REQUEST_CHARACTERISTIC:
                 await self.sw.notify_handler_results.put(None)
+
         self.mock_device.write_gatt_char.side_effect = mock_write
 
     async def test_requests(self):
@@ -666,14 +712,16 @@ class ScreenWriterDetailTest(IsolatedAsyncioTestCase):
         await self.sw.request_refresh()
         self.assertEqual(self.mock_device.write_gatt_char.call_count, 4)
 
-    @patch('gicisky_tag.writer.logger')
+    @patch("gicisky_tag.writer.logger")
     async def test_notify_handler_dispatch(self, mock_logger):
         # Test 0x01 (block size)
         await self.sw.notify_handler(None, bytes([0x01, 0xF4, 0x00]))
         self.assertEqual(self.sw.block_size, 244)
 
         # Test 0x05 success (part request)
-        await self.sw.notify_handler(None, bytes([0x05, 0x00, 0x01, 0x00, 0x00, 0x00]))
+        await self.sw.notify_handler(
+            None, bytes([0x05, 0x00, 0x01, 0x00, 0x00, 0x00])
+        )
         part = await self.sw.transfer_queue.get()
         self.assertEqual(part, 1)
 
@@ -683,7 +731,9 @@ class ScreenWriterDetailTest(IsolatedAsyncioTestCase):
         self.assertIsNone(part)
 
         # Test status opcodes
-        await self.sw.notify_handler(None, bytes([0x02, 0x00])) # success write
+        await self.sw.notify_handler(
+            None, bytes([0x02, 0x00])
+        )  # success write
         await self.sw.notify_handler(None, bytes([0x19]))
         await self.sw.notify_handler(None, bytes([0x40]))
         await self.sw.notify_handler(None, bytes([0x50]))
@@ -697,29 +747,31 @@ class ScreenWriterDetailTest(IsolatedAsyncioTestCase):
         await self.sw.send_image_block(0)
         args, kwargs = self.mock_device.write_gatt_char.call_args
         data = args[1]
-        self.assertEqual(data[:4], b'\x00\x00\x00\x00') # part 0
-        self.assertEqual(len(data), 244) # 4 + 240
+        self.assertEqual(data[:4], b"\x00\x00\x00\x00")  # part 0
+        self.assertEqual(len(data), 244)  # 4 + 240
 
         await self.sw.send_image_block(1)
         args, kwargs = self.mock_device.write_gatt_char.call_args
         data = args[1]
-        self.assertEqual(data[:4], b'\x01\x00\x00\x00') # part 1
-        self.assertEqual(len(data), 164) # 4 + 160
+        self.assertEqual(data[:4], b"\x01\x00\x00\x00")  # part 1
+        self.assertEqual(len(data), 164)  # 4 + 160
 
     async def test_handle_transfer(self):
         # Mock handle_transfer which waits for queue
         await self.sw.transfer_queue.put(0)
-        await self.sw.transfer_queue.put(None) # stop
+        await self.sw.transfer_queue.put(None)  # stop
 
         # We need to mock send_image_block because it's called inside
-        with patch.object(self.sw, 'send_image_block', new_callable=AsyncMock) as mock_send:
+        with patch.object(
+            self.sw, "send_image_block", new_callable=AsyncMock
+        ) as mock_send:
             await self.sw.handle_transfer()
             mock_send.assert_called_with(0)
+
 
 # ══════════════════════════════════════════════════════════════════
 #  Automation tests
 # ══════════════════════════════════════════════════════════════════
-
 
 
 class AutomationTests(TestCase):
@@ -732,20 +784,26 @@ class AutomationTests(TestCase):
         self.config.ical_url = "http://example.com/ical"
         self.config.save()
 
-    @patch('epaper.automation.fetch_events_today')
-    @patch('epaper.automation.run_with_cleanup', new_callable=AsyncMock)
+    @patch("epaper.automation.fetch_events_today")
+    @patch("epaper.automation.run_with_cleanup", new_callable=AsyncMock)
     def test_automation_busy(self, mock_run, mock_fetch):
         from epaper.automation import check_and_update_automation
         from datetime import datetime
         from datetime import timezone as dt_timezone
 
         # Current time within meeting
-        mock_fetch.return_value = [{
-            "summary": "Busy Meeting",
-            "start": datetime.now(dt_timezone.utc).replace(hour=0, minute=0),
-            "end": datetime.now(dt_timezone.utc).replace(hour=23, minute=59),
-            "all_day": False
-        }]
+        mock_fetch.return_value = [
+            {
+                "summary": "Busy Meeting",
+                "start": datetime.now(dt_timezone.utc).replace(
+                    hour=0, minute=0
+                ),
+                "end": datetime.now(dt_timezone.utc).replace(
+                    hour=23, minute=59
+                ),
+                "all_day": False,
+            }
+        ]
 
         self.config.automation_enabled = True
         self.config.save()
@@ -758,8 +816,8 @@ class AutomationTests(TestCase):
         self.config.refresh_from_db()
         self.assertEqual(self.config.last_automation_image, self.busy_img)
 
-    @patch('epaper.automation.fetch_events_today')
-    @patch('epaper.automation.run_with_cleanup', new_callable=AsyncMock)
+    @patch("epaper.automation.fetch_events_today")
+    @patch("epaper.automation.run_with_cleanup", new_callable=AsyncMock)
     def test_automation_free(self, mock_run, mock_fetch):
         from epaper.automation import check_and_update_automation
 
@@ -776,8 +834,8 @@ class AutomationTests(TestCase):
         self.config.refresh_from_db()
         self.assertEqual(self.config.last_automation_image, self.free_img)
 
-    @patch('epaper.automation.fetch_events_today')
-    @patch('epaper.automation.run_with_cleanup', new_callable=AsyncMock)
+    @patch("epaper.automation.fetch_events_today")
+    @patch("epaper.automation.run_with_cleanup", new_callable=AsyncMock)
     def test_automation_no_change(self, mock_run, mock_fetch):
         from epaper.automation import check_and_update_automation
 
@@ -791,55 +849,62 @@ class AutomationTests(TestCase):
         # Should NOT have triggered run_with_cleanup because already free
         self.assertFalse(mock_run.called)
 
-    @patch('epaper.automation.CronTab')
+    @patch("epaper.automation.CronTab")
     def test_set_automation_cron(self, mock_cron_class):
         from epaper.automation import set_automation_cron
+
         mock_cron = mock_cron_class.return_value
-        
+
         # Enable
         set_automation_cron(True)
         self.assertTrue(mock_cron.new.called)
         self.assertTrue(mock_cron.write.called)
-        
+
         # Disable
         mock_cron.reset_mock()
         set_automation_cron(False)
         self.assertTrue(mock_cron.remove_all.called)
         self.assertTrue(mock_cron.write.called)
 
-    @patch('epaper.calendar.fetch_events_today')
+    @patch("epaper.calendar.fetch_events_today")
     def test_automation_status_view(self, mock_fetch):
         from django.urls import reverse
         from datetime import datetime, timezone as dt_timezone
-        
+
         # Busy state
-        mock_fetch.return_value = [{
-            "summary": "Meeting X",
-            "start": datetime.now(dt_timezone.utc).replace(hour=0, minute=0),
-            "end": datetime.now(dt_timezone.utc).replace(hour=23, minute=59),
-            "all_day": False
-        }]
+        mock_fetch.return_value = [
+            {
+                "summary": "Meeting X",
+                "start": datetime.now(dt_timezone.utc).replace(
+                    hour=0, minute=0
+                ),
+                "end": datetime.now(dt_timezone.utc).replace(
+                    hour=23, minute=59
+                ),
+                "all_day": False,
+            }
+        ]
         self.config.automation_enabled = True
         self.config.save()
-        
-        response = self.client.get(reverse('automation_status'))
+
+        response = self.client.get(reverse("automation_status"))
         self.assertEqual(response.status_code, 200)
         data = response.json()
-        self.assertIn("BUSY", data['state_str'])
-        self.assertIn("Meeting X", data['state_str'])
-        self.assertIn("Next change at", data['next_str'])
+        self.assertIn("BUSY", data["state_str"])
+        self.assertIn("Meeting X", data["state_str"])
+        self.assertIn("Next change at", data["next_str"])
 
         # Check last update str (initially empty)
-        self.assertEqual(data['last_str'], "")
+        self.assertEqual(data["last_str"], "")
 
         # Simulate check_automation running
         self.config.last_automation_time = datetime.now()
         self.config.save()
-        response = self.client.get(reverse('automation_status'))
-        self.assertIn("Last update", response.json()['last_str'])
+        response = self.client.get(reverse("automation_status"))
+        self.assertIn("Last update", response.json()["last_str"])
 
         # Free state
         mock_fetch.return_value = []
-        response = self.client.get(reverse('automation_status'))
+        response = self.client.get(reverse("automation_status"))
         data = response.json()
-        self.assertIn("FREE", data['state_str'])
+        self.assertIn("FREE", data["state_str"])

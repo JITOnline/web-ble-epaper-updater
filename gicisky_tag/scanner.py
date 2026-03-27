@@ -33,8 +33,10 @@ async def find_device():
             if len(m_data) >= 2:
                 power_data = float(m_data[1]) / 10
 
-            raw_str = f'{raw_type:04x}' if raw_type is not None else 'N/A'
-            bat_str = f'{power_data:.1f} V' if power_data is not None else 'N/A'
+            raw_str = f"{raw_type:04x}" if raw_type is not None else "N/A"
+            bat_str = (
+                f"{power_data:.1f} V" if power_data is not None else "N/A"
+            )
             logger.info(
                 f"Found device {address} "
                 f"(ID: {found_id:04x}, rawType: {raw_str}). "
