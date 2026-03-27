@@ -6,7 +6,7 @@
     <title>Gicisky E-Ink BLE Configurator</title>
     <meta name="description" content="Manage and upload images to your Gicisky Bluetooth E-Paper Display from a sleek, localized web interface.">
     {% load static %}
-    <link rel="stylesheet" href="{% static 'epaper/style.css' %}">
+    <link rel="stylesheet" href="{% static 'epaper/style.css' %}?v=1.1">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
@@ -64,7 +64,14 @@
                 </div>
 
                 <div class="automation-section" style="margin-top: 1.5rem; padding: 1rem; border: 1px solid var(--glass-border); border-radius: 12px; background: rgba(255,255,255,0.05);">
-                    <h3 style="margin-top:0; font-size: 1rem; color: #fff;">iCal Automation</h3>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h3 style="margin:0; font-size: 1rem; color: #fff;">iCal Automation</h3>
+                        {% if config_form.instance.automation_enabled %}
+                        <div style="display: inline-flex; align-items: center; gap: 6px; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; color: #34d399; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3);">
+                            <span style="width: 6px; height: 6px; border-radius: 50%; background: #34d399; display: inline-block; animation: pulse 2s infinite;"></span> RUNNING
+                        </div>
+                        {% endif %}
+                    </div>
                     <div class="form-group row-align" style="margin-bottom: 1rem;">
                         {{ config_form.automation_enabled }}
                         <label for="id_automation_enabled" style="font-weight: 700; color: var(--primary);">ACTIVE AUTOMATION</label>

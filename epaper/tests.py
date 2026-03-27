@@ -136,6 +136,15 @@ class IndexViewTest(TestCase):
         resp = self.client.get('/')
         self.assertEqual(resp.status_code, 200)
         self.assertIn('config_form', resp.context)
+        self.assertNotIn('RUNNING', resp.content.decode())
+
+    def test_get_index_automation_badge(self):
+        cfg = DeviceConfig.get_solo()
+        cfg.automation_enabled = True
+        cfg.save()
+        resp = self.client.get('/')
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn('RUNNING', resp.content.decode())
 
     def test_post_config_update(self):
         DeviceConfig.get_solo()

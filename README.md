@@ -194,7 +194,9 @@ The calendar renders:
    - Disabling automation removes the entry.
    - You can also run a manual one-shot check: `python3 manage.py check_automation`.
 
-**Status Reporting**: When automation is active, the **Debug Console** logs current status (`[FREE]` or `[BUSY]`) and the calculated time for the next display update.
+**Status Reporting**:
+- A pulsing green **RUNNING** badge will appear in the sidebar next to the **iCal Automation** title when the feature is enabled.
+- The **Debug Console** logs the current status (`[FREE]` or `[BUSY]`) and the calculated time for the next display update whenever the page loads or settings change.
 
 ### Debug Console
 
