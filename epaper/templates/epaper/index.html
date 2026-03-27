@@ -292,12 +292,15 @@
         }
 
         function connectDevice() {
-            logDebug(`-> Attempting connection & test...`);
+            const mac = document.getElementById('id_mac_address')?.value;
+            logDebug(`-> Attempting connection & test to ${mac || 'configured device'}...`);
             fetch('/connect/', {
                 method: 'POST',
                 headers: {
+                    'Content-Type': 'application/json',
                     'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-                }
+                },
+                body: JSON.stringify({mac_address: mac})
             })
             .then(res => res.json())
             .then(data => {
@@ -308,12 +311,15 @@
         }
 
         function disconnectDevice() {
-            logDebug(`-> Requesting disconnect...`);
+            const mac = document.getElementById('id_mac_address')?.value;
+            logDebug(`-> Requesting disconnect for ${mac || 'all sessions'}...`);
             fetch('/disconnect/', {
                 method: 'POST',
                 headers: {
+                    'Content-Type': 'application/json',
                     'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-                }
+                },
+                body: JSON.stringify({mac_address: mac})
             })
             .then(res => res.json())
             .then(data => {

@@ -2,6 +2,16 @@
 
 A Django-based web application for managing and updating Gicisky BLE e-paper displays. Provides a browser-based dashboard for uploading images, generating calendar views from iCal feeds, and pushing content to displays over Bluetooth Low Energy.
 
+## Dashboard & Hardware
+
+| E-Ink Display (Hardware) | Main Dashboard |
+|:---:|:---:|
+| ![E-Ink Display](docs/Display.jpg) | ![Main Dashboard](docs/Gicisky%20E-Ink%20BLE%20Configurator%201.png) |
+
+| Sidebar Settings (Part 1) | Sidebar Settings (Part 2) |
+|:---:|:---:|
+| ![Settings 1](docs/Gicisky%20E-Ink%20BLE%20Configurator%202.png) | ![Settings 2](docs/Gicisky%20E-Ink%20BLE%20Configurator%203.png) |
+
 ## Features
 
 | Feature | Description |

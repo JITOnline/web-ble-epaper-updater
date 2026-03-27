@@ -224,17 +224,26 @@ async def send_cmd_view(request):
 
 async def connect_device_view(request):
     if request.method != "POST":
-        return JsonResponse(
-            {"status": "error", "message": "Invalid method"},
-            status=405,
-        )
+        return JsonResponse({"status": "error", "message": "Invalid method"}, status=405)
 
     try:
-        config = await DeviceConfig.objects.aget(id=1)
-        mac_address = config.mac_address
+        from asgiref.sync import sync_to_async
+        config = await sync_to_async(DeviceConfig.get_solo)()
+        
+        # Priority: explicit MAC from request body, then database
+        mac_address = None
+        try:
+            data = json.loads(request.body) if request.body else {}
+            mac_address = data.get("mac_address")
+        except:
+            pass
+            
+        if not mac_address:
+            mac_address = config.mac_address
+
         if not mac_address:
             return JsonResponse(
-                {"status": "error", "message": "No MAC address configured"},
+                {"status": "error", "message": "No MAC address specified in form or settings."},
                 status=400,
             )
 
@@ -243,14 +252,10 @@ async def connect_device_view(request):
             if mac_address in diag_clients:
                 client = diag_clients[mac_address]
                 if client.is_connected:
-                    return JsonResponse(
-                        {
-                            "status": "success",
-                            "message": (
-                                f"Already connected to {mac_address}."
-                            ),
-                        }
-                    )
+                    return JsonResponse({
+                        "status": "success",
+                        "message": f"Already connected to {mac_address}."
+                    })
                 else:
                     diag_clients.pop(mac_address)
 
@@ -263,15 +268,10 @@ async def connect_device_view(request):
                 bytes([0x01]),
                 response=True,
             )
-            return JsonResponse(
-                {
-                    "status": "success",
-                    "message": (
-                        f"Connected to {mac_address} "
-                        "(session persists). Verified with CMD 01."
-                    ),
-                }
-            )
+            return JsonResponse({
+                "status": "success",
+                "message": f"Connected to {mac_address}. Session active. Verified with CMD 01."
+            })
     except Exception as e:
         return JsonResponse(
             {"status": "error", "message": f"Connection failed: {str(e)}"},
@@ -281,43 +281,45 @@ async def connect_device_view(request):
 
 async def disconnect_device_view(request):
     if request.method != "POST":
-        return JsonResponse(
-            {"status": "error", "message": "Invalid method"},
-            status=405,
-        )
+        return JsonResponse({"status": "error", "message": "Invalid method"}, status=405)
 
     try:
-        config = await DeviceConfig.objects.aget(id=1)
-        mac_address = config.mac_address
+        from asgiref.sync import sync_to_async
+        config = await sync_to_async(DeviceConfig.get_solo)()
+        
+        mac_address = None
+        try:
+            data = json.loads(request.body) if request.body else {}
+            mac_address = data.get("mac_address")
+        except:
+            pass
+            
+        if not mac_address:
+            mac_address = config.mac_address
 
         async with _get_client_lock():
             diag_clients = _get_diag_clients()
-            if mac_address in diag_clients:
+            found_and_removed = False
+            
+            # If explicit mac provided, disconnect that
+            if mac_address and mac_address in diag_clients:
                 client = diag_clients.pop(mac_address)
                 if client.is_connected:
-                    try:
-                        await client.unpair()
-                    except Exception:
-                        pass
                     await client.disconnect()
-                    return JsonResponse(
-                        {
-                            "status": "success",
-                            "message": (
-                                "Unpaired and disconnected "
-                                f"from {mac_address}."
-                            ),
-                        }
-                    )
+                found_and_removed = True
+            
+            # Also cleanup empty/dangling if no mac provided
+            if not mac_address:
+                for addr in list(diag_clients.keys()):
+                    client = diag_clients.pop(addr)
+                    if client.is_connected:
+                        await client.disconnect()
+                found_and_removed = True
 
-        return JsonResponse(
-            {
-                "status": "success",
-                "message": (
-                    "No active connection for " f'{mac_address or "unknown"}.'
-                ),
-            }
-        )
+        return JsonResponse({
+            "status": "success", 
+            "message": f"Disconnected session for {mac_address or 'all devices'}."
+        })
     except Exception as e:
         return JsonResponse(
             {"status": "error", "message": f"Disconnect failed: {str(e)}"},
