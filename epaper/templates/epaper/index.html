@@ -16,11 +16,7 @@
     </div>
     <div class="app-container">
         <aside class="sidebar glass">
-            <div class="sidebar-toggle" onclick="this.closest('.sidebar').classList.toggle('collapsed')">
-                <h2>Settings</h2>
-                <span class="toggle-icon">◀</span>
-            </div>
-            <div class="sidebar-content">
+            <div class="sidebar-actions">
             {% if messages %}
             <div class="messages">
                 {% for message in messages %}
@@ -50,7 +46,14 @@
                     </button>
                 </form>
             </div>
+            </div>
 
+            <div class="sidebar-toggle" onclick="this.closest('.sidebar').classList.toggle('collapsed')">
+                <h2>Settings</h2>
+                <span class="toggle-icon">◀</span>
+            </div>
+
+            <div class="sidebar-content">
             <form method="post" action="{% url 'index' %}" class="settings-form">
                 {% csrf_token %}
                 <div class="form-group">

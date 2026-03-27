@@ -105,6 +105,8 @@ body {
 
 .sidebar {
     width: 350px;
+    flex: 1;
+    min-width: 350px;
     padding: 2rem;
     display: flex;
     flex-direction: column;
@@ -112,7 +114,7 @@ body {
     overflow-y: auto;
     box-sizing: border-box;
     flex-shrink: 0;
-    transition: width 0.3s ease;
+    transition: all 0.3s ease;
 }
 
 .sidebar-toggle {
@@ -136,40 +138,51 @@ body {
     transition: transform 0.3s ease;
 }
 
-.sidebar-content {
+.sidebar-actions, .sidebar-content {
     display: flex;
     flex-direction: column;
-    gap: 2rem;
-    overflow-y: auto;
+    gap: 1.5rem;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+
+.sidebar-actions {
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--glass-border);
+    margin-bottom: 1.5rem;
+}
+
+.sidebar-content {
     flex: 1;
     min-height: 0;
-    transition: opacity 0.2s ease;
+    overflow-y: auto;
 }
 
 .sidebar.collapsed {
     width: 80px;
+    flex: 0 0 80px;
+    min-width: 80px;
     padding: 2rem 1rem;
 }
 
+.sidebar.collapsed .sidebar-actions,
 .sidebar.collapsed .sidebar-content {
     opacity: 0;
+    visibility: hidden;
     height: 0;
+    margin: 0;
+    padding: 0;
     overflow: hidden;
     pointer-events: none;
 }
 
 .sidebar.collapsed .sidebar-toggle {
     justify-content: center;
-    padding-bottom: 0;
-}
-
-.sidebar.collapsed .sidebar-toggle h2 {
-    display: none;
+    padding: 1rem 0;
 }
 
 .sidebar.collapsed .toggle-icon {
     transform: rotate(180deg);
-    font-size: 1rem;
+    font-size: 1.25rem;
 }
 
 ::-webkit-scrollbar {
@@ -369,7 +382,8 @@ input[type="checkbox"]:checked::after {
 
 .gallery-area {
     flex: 1;
-    padding: 2.5rem;
+    min-width: 350px;
+    padding: 2rem;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
