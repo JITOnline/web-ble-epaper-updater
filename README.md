@@ -140,7 +140,7 @@ services:
     network_mode: "host"
     volumes:
       - .:/app
-      - /run/dbus:/run/dbus:ro
+      - /run/dbus:/run/dbus
       - ./data:/app/data
     environment:
       - DJANGO_SETTINGS_MODULE=config.settings
