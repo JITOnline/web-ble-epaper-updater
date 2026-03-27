@@ -40,7 +40,7 @@ A Django-based web application for managing and updating Gicisky BLE e-paper dis
 
 ## DietPi / Raspberry Pi Deployment (Recommended)
 
-Due to the limited resources of a Raspberry Pi Zero W (512 MB RAM, single-core ARMv6), running natively on **DietPi** via a `systemd` service is the recommended approach. Docker works but adds meaningful overhead on this hardware.
+I am running this project on a Raspberry Pi Zero W (512 MB RAM, single-core ARMv6). Due to the limited resources, running natively on **DietPi** via a `systemd` service is the recommended approach. Docker works but adds meaningful overhead on this hardware.
 
 ### 1. System Preparation
 
@@ -74,7 +74,7 @@ sudo systemctl restart bluetooth
 
 ```bash
 cd /srv
-git clone <repo-url> web-ble-epaper-updater
+git clone https://github.com/JITOnline/web-ble-epaper-updater.git)
 cd web-ble-epaper-updater
 
 python3 -m venv venv
