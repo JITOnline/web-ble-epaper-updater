@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gicisky E-Ink BLE Configurator</title>
+    <meta name="description" content="Manage and upload images to your Gicisky Bluetooth E-Paper Display from a sleek, localized web interface.">
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'epaper/style.css' %}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="background-beams"></div>
+    <div class="page-title">
+        <h1>Configurator for Gicisky e-ink Bluetooth LE displays</h1>
+    </div>
+    <div class="app-container">
+        <aside class="sidebar glass">
+            <div class="sidebar-toggle" onclick="this.closest('.sidebar').classList.toggle('collapsed')">
+                <h2>Settings</h2>
+                <span class="toggle-icon">◀</span>
+            </div>
+            <div class="sidebar-content">
+            <form method="post" action="{% url 'index' %}" class="settings-form">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label for="id_mac_address">Device MAC Address</label>
+                    {{ config_form.mac_address }}
+                </div>
+                <div class="form-group">
+                    <label for="id_raw_type">Hardware Raw Type</label>
+                    {{ config_form.raw_type }}
+                </div>
+                <div class="form-row">
+                    <div class="form-group row-align">
+                        {{ config_form.rotate }}
+                        <label for="id_rotate">Rotate 180°</label>
+                    </div>
+                    <div class="form-group row-align">
+                        {{ config_form.negative }}
+                        <label for="id_negative">Negative colors</label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="id_dithering">Dithering Algorithm</label>
+                    {{ config_form.dithering }}
+                </div>
+                <div class="form-group" style="padding: 1rem; border: 1px dashed var(--glass-border); border-radius: 8px;">
+                    <label>Force Advanced Override</label>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap:0.5rem; margin-bottom: 0.5rem;">
+                        {{ config_form.width_override }}
+                        {{ config_form.height_override }}
+                    </div>
+                    <div class="form-group row-align" style="margin-bottom:0.5rem;">
+                        {{ config_form.force_compression }} <label for="id_force_compression">Force Compress</label>
+                    </div>
+                    <div class="form-group row-align" style="margin-bottom:0.5rem;">
+                        {{ config_form.force_second_color }} <label for="id_force_second_color">Force BWR</label>
+                    </div>
+                    <div class="form-group row-align">
+                        {{ config_form.force_mirror }} <label for="id_force_mirror">Force Mirror</label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="id_ical_url">iCal Feed URL</label>
+                    {{ config_form.ical_url }}
+                </div>
+                
+                <button type="submit" class="btn primary">Save Config</button>
+            </form>
+            
+            {% if messages %}
+            <div class="messages">
+                {% for message in messages %}
+                <div class="toast {{ message.tags }}">{{ message }}</div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            
+            <div class="upload-section">
+                <h3>Upload New Image</h3>
+                <form method="post" action="{% url 'upload_image' %}" enctype="multipart/form-data" class="upload-form">
+                    {% csrf_token %}
+                    <div class="file-drop-area" id="dropArea">
+                        <span class="fake-btn">Choose Image</span>
+                        <span class="file-msg" id="fileMsg">or drag and drop here</span>
+                        {{ upload_form.image }}
+                    </div>
+                    <button type="submit" class="btn secondary">Upload Image or Text</button>
+                </form>
+            </div>
+
+            <div class="calendar-section" style="margin-top: 1rem;">
+                <form method="post" action="{% url 'generate_calendar' %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn calendar-btn" id="generate-calendar-btn">
+                        <span class="cal-icon">📅</span> Generate Calendar Image
+                    </button>
+                </form>
+            </div>
+
+            <div class="form-group row-align" style="margin-top: 1rem;">
+                <input type="checkbox" id="show-debug-toggle" onchange="document.getElementById('debug-section').style.display = this.checked ? 'block' : 'none'">
+                <label for="show-debug-toggle">Show Debug Console</label>
+            </div>
+
+            </div>
+        </aside>
+
+        <main class="gallery-area glass">
+            <header>
+                <h1>Image Gallery</h1>
+                <p>Click any image to transfer it to your E-Paper Display</p>
+                <div id="transfer-status" class="status-badge hidden">Starting transfer...</div>
+            </header>
+            
+            <div class="gallery-grid">
+                {% for img in images %}
+                <div class="gallery-card" onclick="triggerUpdate({{ img.id }})">
+                    <button type="button" class="delete-btn" title="Delete image" onclick="event.stopPropagation(); deleteImage({{ img.id }})">✕</button>
+                    <div class="img-wrapper">
+                        {% if img.image %}
+                        <img src="{{ img.image.url }}" alt="Uploaded Image {{ img.id }}">
+                        {% else %}
+                        <div class="text-placeholder" style="background: white; height: 100%; min-height: 120px; display: flex; align-items: center; justify-content: center; padding: 1rem; color: #333; font-weight: 600;">
+                            {{ img.text_overlay }}
+                        </div>
+                        {% endif %}
+                        <div class="overlay">
+                            <span>Upload to Display</span>
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <span>{{ img.uploaded_at|date:"M d, Y H:i" }}</span>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="empty-state">
+                    <p>No images uploaded yet.</p>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="debug-section" id="debug-section" style="margin-top:2rem; padding: 1.5rem; background:rgba(0,0,0,0.2); border-radius: 12px; display: none;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                    <h3 style="margin-bottom: 0;">Debug Console</h3>
+                    <label style="font-size: 0.8rem; display: flex; align-items: center; gap: 0.4rem; cursor: pointer;">
+                        <input type="checkbox" id="detailed-debug-toggle"> Detailed Output
+                    </label>
+                </div>
+                <div class="form-row">
+                    <input type="text" id="debug-cmd" placeholder="e.g. 01">
+                    <button type="button" class="btn secondary" style="margin-top:0;" onclick="sendDebugCmd()">Send</button>
+                </div>
+                <div class="form-row" style="margin-top: 0.5rem; display: flex; gap: 0.5rem;">
+                    <button type="button" class="btn secondary" style="flex: 1; margin:0;" onclick="connectDevice()">Connect &amp; Test</button>
+                    <button type="button" class="btn secondary" style="flex: 1; margin:0; background: #4b5563;" onclick="disconnectDevice()">Disconnect</button>
+                </div>
+                <div class="form-row" style="margin-top: 0.5rem;">
+                    <button type="button" class="btn secondary" style="margin:0; background: #7c3aed; width:100%;" onclick="btReset()">🔄 Reset Bluetooth</button>
+                </div>
+                <div id="debug-log" style="margin-top: 1rem; font-family: monospace; font-size: 0.8rem; height: 150px; overflow-y: scroll; background: #000; padding:0.5rem; border-radius:6px; color:#10b981;">
+                    System ready.
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        function triggerUpdate(imageId) {
+            const isDetailed = document.getElementById('detailed-debug-toggle').checked ? '1' : '0';
+            const statusBadge = document.getElementById('transfer-status');
+            statusBadge.textContent = 'Transmitting...';
+            statusBadge.className = 'status-badge transmitting';
+            
+            fetch(`/trigger/${imageId}/?debug=${isDetailed}`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                }
+            })
+            .then(async res => {
+                const reader = res.body.getReader();
+                const decoder = new TextDecoder('utf-8');
+                let buffer = '';
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    buffer += decoder.decode(value, {stream: true});
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop(); // Keep incomplete line
+                    for (let line of lines) {
+                        line = line.trim();
+                        if (!line) continue;
+                        try {
+                            const data = JSON.parse(line);
+                            if (data.msg) logDebug(data.msg);
+                            else if (data.message) logDebug(data.message); // Fallback for 405
+
+                            if ((data.msg && data.msg.startsWith('SUCCESS')) || data.status === 'success') {
+                                statusBadge.textContent = 'Success!';
+                                statusBadge.className = 'status-badge success';
+                                setTimeout(() => statusBadge.className = 'status-badge hidden', 10000);
+                            } else if ((data.msg && data.msg.startsWith('ERROR')) || data.status === 'error') {
+                                statusBadge.textContent = 'Failed';
+                                statusBadge.className = 'status-badge error';
+                                setTimeout(() => statusBadge.className = 'status-badge hidden', 10000);
+                            }
+                        } catch(e) {
+                            console.error(e, line);
+                        }
+                    }
+                }
+            })
+            .catch(err => {
+                logDebug(`ERROR contacting server: ${err}`);
+                statusBadge.textContent = 'Error contacting server';
+                statusBadge.className = 'status-badge error';
+                setTimeout(() => statusBadge.className = 'status-badge hidden', 10000);
+            });
+        }
+
+        function deleteImage(imageId) {
+            if (!confirm('Delete this image?')) return;
+            fetch(`/delete/${imageId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                }
+            })
+            .then(() => window.location.reload())
+            .catch(err => logDebug(`ERROR deleting image: ${err}`));
+        }
+
+        function logDebug(msg) {
+            const logger = document.getElementById('debug-log');
+            const time = new Date().toISOString().split('T')[1].split('.')[0];
+            logger.innerHTML += `<br>[${time}] ${msg}`;
+            logger.scrollTop = logger.scrollHeight;
+        }
+
+        function sendDebugCmd() {
+            const cmd = document.getElementById('debug-cmd').value;
+            if(!cmd) return;
+            logDebug(`-> Sending: ${cmd}`);
+            fetch('/send-cmd/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: JSON.stringify({cmd: cmd})
+            })
+            .then(res => res.json())
+            .then(data => {
+                logDebug(`<- ${data.status.toUpperCase()}: ${data.message}`);
+            })
+            .catch(err => logDebug(`<- ERROR: ${err}`));
+        }
+
+        function connectDevice() {
+            logDebug(`-> Attempting connection & test...`);
+            fetch('/connect/', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') logDebug(`<- SUCCESS: ${data.message}`);
+                else logDebug(`<- ERROR: ${data.message}`);
+            })
+            .catch(err => logDebug(`<- ERROR: ${err}`));
+        }
+
+        function disconnectDevice() {
+            logDebug(`-> Requesting disconnect...`);
+            fetch('/disconnect/', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                }
+            })
+            .then(res => res.json())
+            .then(data => {
+                logDebug(`<- ${data.message}`);
+            })
+            .catch(err => logDebug(`<- ERROR: ${err}`));
+        }
+
+        function btReset() {
+            logDebug(`-> Resetting Bluetooth adapter...`);
+            fetch('/bt-reset/', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') logDebug(`<- SUCCESS: ${data.message}`);
+                else logDebug(`<- ERROR: ${data.message}`);
+            })
+            .catch(err => logDebug(`<- ERROR: ${err}`));
+        }
+
+        const fileInput = document.querySelector('.file-input');
+        const fileMsg = document.getElementById('fileMsg');
+        fileInput.addEventListener('change', function() {
+            if(this.files && this.files.length > 0) {
+                fileMsg.textContent = this.files[0].name;
+            } else {
+                fileMsg.textContent = 'or drag and drop here';
+            }
+        });
+    </script>
+</body>
+</html>
