@@ -111,7 +111,9 @@ body {
     display: flex;
     flex-direction: column;
     gap: 2rem;
-    overflow: hidden;
+    overflow-y: auto;
+    flex: 1;
+    min-height: 0;
     transition: opacity 0.2s ease;
 }
 
