@@ -282,6 +282,19 @@ async def disconnect_device_view(request):
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': f'Disconnect failed: {str(e)}'}, status=400)
 
+def bt_reset_view(request):
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'message': 'Invalid method'}, status=405)
+    import subprocess, time as _time
+    try:
+        subprocess.run(['bluetoothctl', 'power', 'off'], capture_output=True, timeout=5)
+        _time.sleep(1)
+        subprocess.run(['bluetoothctl', 'power', 'on'], capture_output=True, timeout=5)
+        return JsonResponse({'status': 'success', 'message': 'Bluetooth adapter restarted.'})
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': f'BT reset failed: {e}'}, status=500)
+
+
 def generate_calendar_view(request):
     if request.method != 'POST':
         return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=405)

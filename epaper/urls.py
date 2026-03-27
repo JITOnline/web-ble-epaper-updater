@@ -10,4 +10,5 @@ urlpatterns = [
     path('connect/', views.connect_device_view, name='connect_device'),
     path('disconnect/', views.disconnect_device_view, name='disconnect_device'),
     path('generate-calendar/', views.generate_calendar_view, name='generate_calendar'),
+    path('bt-reset/', views.bt_reset_view, name='bt_reset'),
 ]
