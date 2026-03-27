@@ -49,6 +49,35 @@ body {
     height: 90vh;
     padding: 2rem;
     box-sizing: border-box;
+    align-items: stretch;
+}
+
+.main-column {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    flex: 1;
+    min-width: 0;
+}
+
+.debug-panel {
+    padding: 1.5rem;
+    display: none; /* Controlled by JS */
+}
+
+.debug-panel h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+#debug-log {
+    border: 1px solid var(--glass-border);
+    transition: border-color 0.2s ease;
+}
+
+#debug-log:hover {
+    border-color: rgba(16, 185, 129, 0.3);
 }
 
 .page-title {
