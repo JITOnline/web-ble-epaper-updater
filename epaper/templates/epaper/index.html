@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>E-Paper BLE Dashboard</title>
+    <title>Gicisky E-Ink BLE Configurator</title>
     <meta name="description" content="Manage and upload images to your Gicisky Bluetooth E-Paper Display from a sleek, localized web interface.">
     {% load static %}
     <link rel="stylesheet" href="{% static 'epaper/style.css' %}">
@@ -11,9 +11,16 @@
 </head>
 <body>
     <div class="background-beams"></div>
+    <div class="page-title">
+        <h1>Configurator for Gicisky e-ink Bluetooth LE displays</h1>
+    </div>
     <div class="app-container">
         <aside class="sidebar glass">
-            <h2>Settings</h2>
+            <div class="sidebar-toggle" onclick="this.closest('.sidebar').classList.toggle('collapsed')">
+                <h2>Settings</h2>
+                <span class="toggle-icon">◀</span>
+            </div>
+            <div class="sidebar-content">
             <form method="post" action="{% url 'index' %}" class="settings-form">
                 {% csrf_token %}
                 <div class="form-group">
@@ -93,7 +100,12 @@
                 </form>
             </div>
 
-            <div class="debug-section" style="margin-top:2rem; padding: 1rem; background:rgba(0,0,0,0.2); border-radius: 12px;">
+            <div class="form-group row-align" style="margin-top: 1rem;">
+                <input type="checkbox" id="show-debug-toggle" onchange="document.getElementById('debug-section').style.display = this.checked ? 'block' : 'none'">
+                <label for="show-debug-toggle">Show Debug Console</label>
+            </div>
+
+            <div class="debug-section" id="debug-section" style="margin-top:1rem; padding: 1rem; background:rgba(0,0,0,0.2); border-radius: 12px; display: none;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
                     <h3 style="margin-bottom: 0;">Debug Console</h3>
                     <label style="font-size: 0.8rem; display: flex; align-items: center; gap: 0.4rem; cursor: pointer;">
@@ -114,6 +126,7 @@
                 <div id="debug-log" style="margin-top: 1rem; font-family: monospace; font-size: 0.8rem; height: 100px; overflow-y: scroll; background: #000; padding:0.5rem; border-radius:6px; color:#10b981;">
                     System ready.
                 </div>
+            </div>
             </div>
         </aside>
 
