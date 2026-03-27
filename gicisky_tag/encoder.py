@@ -96,8 +96,8 @@ def dither_image_bwr(image, dithering: Dither, debug_folder=None):
 
         bwr_pixels = np.zeros((*image.size[::-1], 3), dtype=np.uint8)
         bwr_pixels[red_bitmap] = red_color
-        bwr_pixels[(red_bitmap == False) & bw_bitmap] = white_color
-        bwr_pixels[(red_bitmap == False) & (bw_bitmap == False)] = black_color
+        bwr_pixels[~red_bitmap & bw_bitmap] = white_color
+        bwr_pixels[~red_bitmap & ~bw_bitmap] = black_color
         bwr_image = Image.fromarray(bwr_pixels, "RGB")
 
         if debug_folder is not None:
@@ -151,7 +151,7 @@ class TagModel:
         # case 8: 128x250
         # case 9: 800x480
         # case 10: 480x280
-        
+
         # NOTE: The HTML seems to have width and height swapped compared to what we expect
         # for a horizontal display. We use (width, height) as in PIL.
         # But wait, the HTML says width=104, height=212 for case 0.
@@ -169,7 +169,7 @@ class TagModel:
             9: (800, 480),
             10: (480, 280),
         }
-        
+
         if screen_resolution in res_map:
             self.width, self.height = res_map[screen_resolution]
         else:
@@ -188,26 +188,26 @@ class TagModel:
 def encode_image(image, tag_model=None, dithering=Dither.NONE, debug_folder=None):
     if tag_model is None:
         tag_model = TagModel()
-        
+
     logger.info(f"Encoding image for {tag_model}...")
-    
+
     # Resize image to match tag resolution
     image = image.convert("RGB").resize((tag_model.width, tag_model.height), Image.Resampling.LANCZOS)
-    
+
     if tag_model.mirror_image:
         image = image.transpose(Image.FLIP_LEFT_RIGHT)
-        
+
     bwr_image = dither_image_bwr(image, dithering=dithering, debug_folder=debug_folder)
     bwr_pixels = np.asarray(bwr_image.convert("RGB")).astype(int)
 
     # BW bitmap: From ATC1441: White is 1, Black and Red are 0
     # luminance > 128 sets the bit for White.
     bw_bitmap = (bwr_pixels == white_color).all(axis=-1)
-    
+
     # Red bitmap: From ATC1441: Red is 1
     # Red color sets the bit in the second color channel.
     red_bitmap = (bwr_pixels == red_color).all(axis=-1)
-    
+
     # CRITICAL: The ATC1441 reference reads pixels as:
     #   for i in range(width):       # "column" index
     #       for x in range(height):  # pixel within "column"
@@ -219,10 +219,10 @@ def encode_image(image, tag_model=None, dithering=Dither.NONE, debug_folder=None
     #
     # The numpy equivalent: flatten() then reshape to (width, height).
     # Using .T would give actual image columns (col_i, all_rows), which is WRONG.
-    num_line_bytes = math.ceil(tag_model.height / 8)
+
     bw_packed = np.packbits(bw_bitmap.flatten().reshape(tag_model.width, tag_model.height), axis=-1)
     red_packed = np.packbits(red_bitmap.flatten().reshape(tag_model.width, tag_model.height), axis=-1)
-    
+
     if tag_model.use_compression:
         bw_data = compress_bitmap_generic(bw_packed, tag_model.width, tag_model.height)
         red_data = compress_bitmap_generic(red_packed, tag_model.width, tag_model.height)
@@ -235,13 +235,13 @@ def encode_image(image, tag_model=None, dithering=Dither.NONE, debug_folder=None
     else:
         # BWR, BWY, BWRY, BWRGBYO
         image_data = bytearray(bw_data) + bytearray(red_data)
-        
+
     # Gicisky tags expect a 4-byte little-endian length at the start of the data stream,
     # but ONLY when compression is enabled.
     if tag_model.use_compression:
         # The length field must include its own 4 bytes in the total count
         image_data = (len(image_data) + 4).to_bytes(4, "little") + image_data
-        
+
     return image_data
 
 
@@ -249,7 +249,7 @@ def compress_bitmap_generic(packed_bitmap, width, height):
     num_line_bytes = math.ceil(height / 8)
     compression_markers = [0x00, 0x00, 0x00, 0x00]
     encoded_bitmap = []
-    
+
     # packed_bitmap should have shape (width, num_line_bytes)
     for col in range(width):
         line_data = list(packed_bitmap[col])

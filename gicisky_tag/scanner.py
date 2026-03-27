@@ -21,19 +21,25 @@ async def find_device():
             address = device.address.upper()
             logger.debug(f"Device {device}: {data}")
             m_data = data.manufacturer_data[found_id]
-            
+
             # HTML: rawType = (data.getUint8(4) << 8) | data.getUint8(0);
             raw_type = None
             if len(m_data) >= 5:
                 raw_type = (m_data[4] << 8) | m_data[0]
             elif len(m_data) >= 1:
                 raw_type = m_data[0]
-            
+
             power_data = None
             if len(m_data) >= 2:
                 power_data = float(m_data[1]) / 10
-                
-            logger.info(f"Found device {address} (ID: {found_id:04x}, rawType: {f'{raw_type:04x}' if raw_type is not None else 'N/A'}). Battery: {f'{power_data:.1f} V' if power_data is not None else 'N/A'}")
+
+            raw_str = f'{raw_type:04x}' if raw_type is not None else 'N/A'
+            bat_str = f'{power_data:.1f} V' if power_data is not None else 'N/A'
+            logger.info(
+                f"Found device {address} "
+                f"(ID: {found_id:04x}, rawType: {raw_str}). "
+                f"Battery: {bat_str}"
+            )
             device_info = {"address": address, "raw_type": raw_type}
 
     scanner = BleakScanner(scan_callback)
