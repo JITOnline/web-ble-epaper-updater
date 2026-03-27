@@ -18,14 +18,16 @@ A Django-based web application for managing and updating Gicisky BLE e-paper dis
 |---|---|
 | **Image Upload & Gallery** | Upload images (drag-and-drop or file picker) that are displayed in a gallery grid. Click any image to transfer it to the connected e-paper display. |
 | **Image Deletion** | Hover over a gallery card to reveal a ✕ button that deletes the image from both the gallery and disk. |
-| **iCal Free/Busy Automation** | Automatically switch the display between designated "Free" and "Busy" images based on your calendar status. Includes a persistent background worker for hands-off updates. |
-| **iCal Calendar Generator** | Paste an iCal feed URL into Settings. Click **📅 Generate Calendar Image** to render an 800×480 day-view showing today's meetings. The generated image is added to the gallery for manual or automatic transfer. |
-| **Device Configuration** | Configure MAC address, hardware raw type, dithering algorithm, rotation, negative colors, and advanced overrides (resolution, compression, mirror, BWR) from the sidebar. |
-| **Auto-Scan** | Leave the MAC address empty to auto-scan for nearby Gicisky tags. |
-| **Debug Console** | Toggle the debug console from Settings to access: raw hex command sending, Connect & Test, Disconnect, and Bluetooth adapter reset. Transfer progress and errors stream to the console in real time. |
-| **Bluetooth Reset** | One-click `bluetoothctl power off/on` cycle to recover from BlueZ D-Bus errors without SSH. |
-| **Collapsible Settings** | Click the Settings header to collapse the sidebar and maximize gallery space. |
-| **BLE Error Handling** | Catches `BleakDeviceNotFoundError` and `BleakDBusError` with user-friendly messages instead of raw tracebacks. |
+| **iCal Free/Busy Automation** | Automatically switch the display based on calendar status. Includes a pulsing status badge and background cron worker. |
+| **iCal Calendar Generator** | Paste an iCal URL to generate an 800×480 day-view image for your display. |
+| **Test-Before-Save** | Diagnostic "Connect & Test" uses your unsaved MAC address input to verify hardware before committing settings. |
+| **Glassmorphism UI** | A premium, modern dashboard design with glass effects, smooth animations, and independent scrollable panels. |
+| **Split-Panel Layout** | Optimized 1/3 (Settings) to 2/3 (Gallery) dashboard ratio for balance and usability. |
+| **Full-Width Debug Console** | Diagnostic logs and raw hex command utility span the entire bottom of the window for deep troubleshooting. |
+| **Auto-Scan** | Leave the MAC address empty to auto-discover nearby Gicisky tags. |
+| **Bluetooth Reset** | One-click `bluetoothctl` adapter power-cycling from the dashboard. |
+| **Collapsible Sidebar** | Click the Settings header to minimize the sidebar and maximize image viewing space. |
+| **BLE Error Handling** | Real-time user feedback for Bluetooth issues like out-of-range tags or busy adapters. |
 
 ## Architecture & Requirements
 
