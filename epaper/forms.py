@@ -52,6 +52,8 @@ class DeviceConfigForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        if "ical_url" in self.fields:
+            self.fields["ical_url"].assume_scheme = "https"
         # Sequence numbering: newest first matches the gallery forloop.revindex logic
         all_imgs = list(EpaperImage.objects.all().order_by("uploaded_at"))
         # Create a mapping: ID -> #Number

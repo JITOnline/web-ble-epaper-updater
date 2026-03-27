@@ -7,6 +7,7 @@
     <meta name="description" content="Manage and upload images to your Gicisky Bluetooth E-Paper Display from a sleek, localized web interface.">
     {% load static %}
     <link rel="stylesheet" href="{% static 'epaper/style.css' %}?v=1.2">
+    <link rel="icon" type="image/png" href="{% static 'epaper/favicon.png' %}">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
@@ -16,10 +17,43 @@
     </div>
     <div class="app-container">
         <aside class="sidebar glass">
+            <div class="sidebar-actions">
+            {% if messages %}
+            <div class="messages">
+                {% for message in messages %}
+                <div class="toast {{ message.tags }}">{{ message }}</div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <div class="upload-section">
+                <h3>Upload New Image</h3>
+                <form method="post" action="{% url 'upload_image' %}" enctype="multipart/form-data" class="upload-form">
+                    {% csrf_token %}
+                    <div class="file-drop-area" id="dropArea">
+                        <span class="fake-btn">Choose Image</span>
+                        <span class="file-msg" id="fileMsg">or drag and drop here</span>
+                        {{ upload_form.image }}
+                    </div>
+                    <button type="submit" class="btn secondary">Upload Image or Text</button>
+                </form>
+            </div>
+
+            <div class="calendar-section" style="margin-top: 1rem; margin-bottom: 2rem;">
+                <form method="post" action="{% url 'generate_calendar' %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn calendar-btn" id="generate-calendar-btn">
+                        <span class="cal-icon">📅</span> Generate Calendar Image
+                    </button>
+                </form>
+            </div>
+            </div>
+
             <div class="sidebar-toggle" onclick="this.closest('.sidebar').classList.toggle('collapsed')">
                 <h2>Settings</h2>
                 <span class="toggle-icon">◀</span>
             </div>
+
             <div class="sidebar-content">
             <form method="post" action="{% url 'index' %}" class="settings-form">
                 {% csrf_token %}
@@ -93,35 +127,6 @@
                 <button type="submit" class="btn primary" style="margin-top: 1rem;">Save Settings</button>
             </form>
             
-            {% if messages %}
-            <div class="messages">
-                {% for message in messages %}
-                <div class="toast {{ message.tags }}">{{ message }}</div>
-                {% endfor %}
-            </div>
-            {% endif %}
-            
-            <div class="upload-section">
-                <h3>Upload New Image</h3>
-                <form method="post" action="{% url 'upload_image' %}" enctype="multipart/form-data" class="upload-form">
-                    {% csrf_token %}
-                    <div class="file-drop-area" id="dropArea">
-                        <span class="fake-btn">Choose Image</span>
-                        <span class="file-msg" id="fileMsg">or drag and drop here</span>
-                        {{ upload_form.image }}
-                    </div>
-                    <button type="submit" class="btn secondary">Upload Image or Text</button>
-                </form>
-            </div>
-
-            <div class="calendar-section" style="margin-top: 1rem;">
-                <form method="post" action="{% url 'generate_calendar' %}">
-                    {% csrf_token %}
-                    <button type="submit" class="btn calendar-btn" id="generate-calendar-btn">
-                        <span class="cal-icon">📅</span> Generate Calendar Image
-                    </button>
-                </form>
-            </div>
 
             <div class="form-group row-align" style="margin-top: 1rem;">
                 <input type="checkbox" id="show-debug-toggle" onchange="document.getElementById('debug-section').style.display = this.checked ? 'block' : 'none'">
@@ -165,31 +170,34 @@
                 </div>
                 {% endfor %}
             </div>
+        </main>
+    </div>
 
-            <div class="debug-section" id="debug-section" style="margin-top:2rem; padding: 1.5rem; background:rgba(0,0,0,0.2); border-radius: 12px; display: none;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                    <h3 style="margin-bottom: 0;">Debug Console</h3>
-                    <label style="font-size: 0.8rem; display: flex; align-items: center; gap: 0.4rem; cursor: pointer;">
-                        <input type="checkbox" id="detailed-debug-toggle"> Detailed Output
-                    </label>
-                </div>
-                <div class="form-row">
+    <div class="debug-container">
+        <div class="debug-panel glass" id="debug-section" style="display: none;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h3 style="margin-bottom: 0;">Debug Console</h3>
+                <label style="font-size: 0.8rem; display: flex; align-items: center; gap: 0.4rem; cursor: pointer;">
+                    <input type="checkbox" id="detailed-debug-toggle"> Detailed Output
+                </label>
+            </div>
+            <div class="form-row-debug">
+                <div class="form-row" style="flex: 1;">
                     <input type="text" id="debug-cmd" placeholder="e.g. 01">
                     <button type="button" class="btn secondary" style="margin-top:0;" onclick="sendDebugCmd()">Send</button>
                 </div>
-                <div class="form-row" style="margin-top: 0.5rem; display: flex; gap: 0.5rem;">
-                    <button type="button" class="btn secondary" style="flex: 1; margin:0;" onclick="connectDevice()">Connect &amp; Test</button>
-                    <button type="button" class="btn secondary" style="flex: 1; margin:0; background: #4b5563;" onclick="disconnectDevice()">Disconnect</button>
-                </div>
-                <div class="form-row" style="margin-top: 0.5rem;">
-                    <button type="button" class="btn secondary" style="margin:0; background: #7c3aed; width:100%;" onclick="btReset()">🔄 Reset Bluetooth</button>
-                </div>
-                <div id="debug-log" style="margin-top: 1rem; font-family: monospace; font-size: 0.8rem; height: 150px; overflow-y: scroll; background: #000; padding:0.5rem; border-radius:6px; color:#10b981;">
-                    System ready.
+                <div class="debug-actions">
+                    <button type="button" class="btn secondary" style="margin:0;" onclick="connectDevice()">Connect &amp; Test</button>
+                    <button type="button" class="btn secondary" style="margin:0; background: #4b5563;" onclick="disconnectDevice()">Disconnect</button>
+                    <button type="button" class="btn secondary" style="margin:0; background: #7c3aed;" onclick="btReset()">🔄 Reset Bluetooth</button>
                 </div>
             </div>
-        </main>
+            <div id="debug-log" style="margin-top: 1rem; font-family: monospace; font-size: 0.8rem; height: 150px; overflow-y: scroll; background: #000; padding:1rem; border-radius:12px; color:#10b981;">
+                System ready.
+            </div>
+        </div>
     </div>
+
 
     <script>
         function triggerUpdate(imageId) {
@@ -284,12 +292,15 @@
         }
 
         function connectDevice() {
-            logDebug(`-> Attempting connection & test...`);
+            const mac = document.getElementById('id_mac_address')?.value;
+            logDebug(`-> Attempting connection & test to ${mac || 'configured device'}...`);
             fetch('/connect/', {
                 method: 'POST',
                 headers: {
+                    'Content-Type': 'application/json',
                     'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-                }
+                },
+                body: JSON.stringify({mac_address: mac})
             })
             .then(res => res.json())
             .then(data => {
@@ -300,12 +311,15 @@
         }
 
         function disconnectDevice() {
-            logDebug(`-> Requesting disconnect...`);
+            const mac = document.getElementById('id_mac_address')?.value;
+            logDebug(`-> Requesting disconnect for ${mac || 'all sessions'}...`);
             fetch('/disconnect/', {
                 method: 'POST',
                 headers: {
+                    'Content-Type': 'application/json',
                     'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-                }
+                },
+                body: JSON.stringify({mac_address: mac})
             })
             .then(res => res.json())
             .then(data => {
