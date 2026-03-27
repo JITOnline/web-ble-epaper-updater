@@ -46,23 +46,37 @@ body {
     gap: 2rem;
     width: 95%;
     max-width: 1400px;
-    height: 90vh;
-    padding: 2rem;
+    height: 75vh; /* Reduced to make room for debug panel */
+    padding: 2rem 2rem 0 2rem;
     box-sizing: border-box;
     align-items: stretch;
 }
 
-.main-column {
+.debug-container {
+    width: 95%;
+    max-width: 1400px;
+    padding: 1.5rem 2rem 2rem 2rem;
+    box-sizing: border-box;
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
-    flex: 1;
-    min-width: 0;
 }
 
 .debug-panel {
     padding: 1.5rem;
     display: none; /* Controlled by JS */
+}
+
+.form-row-debug {
+    display: flex;
+    gap: 1.5rem;
+    align-items: flex-start;
+    flex-wrap: wrap;
+}
+
+.debug-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
 }
 
 .debug-panel h3 {
@@ -104,9 +118,8 @@ body {
 }
 
 .sidebar {
-    width: 350px;
     flex: 1;
-    min-width: 350px;
+    min-width: 320px;
     padding: 2rem;
     display: flex;
     flex-direction: column;
@@ -381,8 +394,8 @@ input[type="checkbox"]:checked::after {
 .toast.error { border-left: 4px solid var(--error); }
 
 .gallery-area {
-    flex: 1;
-    min-width: 350px;
+    flex: 2;
+    min-width: 600px;
     padding: 2rem;
     overflow-y: auto;
     display: flex;
