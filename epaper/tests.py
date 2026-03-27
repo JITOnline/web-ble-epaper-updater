@@ -613,6 +613,10 @@ class AsyncViewTests(IsolatedAsyncioTestCase):
         get_diagnostic_clients().clear()
 
     async def test_resolve_device_no_mac(self):
+        # Additional defensive clear inside the test
+        from epaper.ble_logic import get_diagnostic_clients
+        get_diagnostic_clients().clear()
+        
         with patch("epaper.ble_logic.find_device") as mock_find:
             from epaper.ble_logic import resolve_device
             import queue
@@ -684,6 +688,8 @@ class AsyncViewTests(IsolatedAsyncioTestCase):
         from epaper.views import disconnect_device_view
         from epaper.models import DeviceConfig
         from asgiref.sync import sync_to_async
+        from epaper.ble_logic import get_diagnostic_clients
+        get_diagnostic_clients().clear()
 
         # Ensure solo exists but mac is empty
         config = await sync_to_async(DeviceConfig.get_solo)()
@@ -916,7 +922,8 @@ class AutomationTests(TestCase):
         self.assertEqual(data["last_str"], "")
 
         # Simulate check_automation running
-        self.config.last_automation_time = datetime.now()
+        from django.utils import timezone
+        self.config.last_automation_time = timezone.now()
         self.config.save()
         response = self.client.get(reverse("automation_status"))
         self.assertIn("Last update", response.json()["last_str"])
