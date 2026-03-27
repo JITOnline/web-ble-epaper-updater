@@ -24,7 +24,10 @@ async def start(args):
     logger.info("Loading image...")
     image = Image.open(args.image)
     image_data = encode_image(
-        image, tag_model=tag_model, dithering=args.dithering, debug_folder=args.debug_folder
+        image,
+        tag_model=tag_model,
+        dithering=args.dithering,
+        debug_folder=args.debug_folder,
     )
 
     await send_data_to_screen(address, image_data)
@@ -42,14 +45,19 @@ def setup_logger(verbose=False):
 
 
 def parser():
-    parser = argparse.ArgumentParser(description="Write an image to a Gicisky tag.")
-    parser.add_argument("--image", type=str, help="Image to send.", required=True)
+    parser = argparse.ArgumentParser(
+        description="Write an image to a Gicisky tag."
+    )
+    parser.add_argument(
+        "--image", type=str, help="Image to send.", required=True
+    )
     parser.add_argument(
         "--address",
         type=str,
         help=(
             "Bluetooth address of the Gicisky tag to be updated. "
-            "If not provided, the script will scan and use the first Gicisky tag that it can find."
+            "If not provided, the script will scan and use the "
+            "first Gicisky tag that it can find."
         ),
     )
     parser.add_argument(

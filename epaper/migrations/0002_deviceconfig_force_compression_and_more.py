@@ -6,56 +6,58 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('epaper', '0001_initial'),
+        ("epaper", "0001_initial"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='deviceconfig',
-            name='force_compression',
+            model_name="deviceconfig",
+            name="force_compression",
             field=models.BooleanField(default=True),
         ),
         migrations.AddField(
-            model_name='deviceconfig',
-            name='force_mirror',
+            model_name="deviceconfig",
+            name="force_mirror",
             field=models.BooleanField(default=False),
         ),
         migrations.AddField(
-            model_name='deviceconfig',
-            name='force_second_color',
+            model_name="deviceconfig",
+            name="force_second_color",
             field=models.BooleanField(default=True),
         ),
         migrations.AddField(
-            model_name='deviceconfig',
-            name='height_override',
+            model_name="deviceconfig",
+            name="height_override",
             field=models.IntegerField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='deviceconfig',
-            name='raw_type',
+            model_name="deviceconfig",
+            name="raw_type",
             field=models.CharField(
                 blank=True,
-                help_text='e.g. 410B. Leave empty to autodetect or use defaults',
+                help_text="e.g. 410B. Leave empty to autodetect or use defaults",
                 max_length=10,
             ),
         ),
         migrations.AddField(
-            model_name='deviceconfig',
-            name='width_override',
+            model_name="deviceconfig",
+            name="width_override",
             field=models.IntegerField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='epaperimage',
-            name='text_overlay',
+            model_name="epaperimage",
+            name="text_overlay",
             field=models.CharField(
                 blank=True,
-                help_text='Text to overlay on a blank canvas instead of uploading an image',
+                help_text="Text to overlay on a blank canvas instead of uploading an image",
                 max_length=255,
             ),
         ),
         migrations.AlterField(
-            model_name='epaperimage',
-            name='image',
-            field=models.ImageField(blank=True, null=True, upload_to='epaper_images/'),
+            model_name="epaperimage",
+            name="image",
+            field=models.ImageField(
+                blank=True, null=True, upload_to="epaper_images/"
+            ),
         ),
     ]

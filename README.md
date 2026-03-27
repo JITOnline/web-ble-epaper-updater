@@ -8,7 +8,8 @@ A Django-based web application for managing and updating Gicisky BLE e-paper dis
 |---|---|
 | **Image Upload & Gallery** | Upload images (drag-and-drop or file picker) that are displayed in a gallery grid. Click any image to transfer it to the connected e-paper display. |
 | **Image Deletion** | Hover over a gallery card to reveal a ✕ button that deletes the image from both the gallery and disk. |
-| **iCal Calendar Generator** | Paste an iCal feed URL (Google Calendar, Outlook, etc.) into Settings. Click **📅 Generate Calendar Image** to render an 800×480 day-view showing today's meetings (red blocks), free time (white), hour grid, and a current-time marker. The generated image is added to the gallery for transfer. |
+| **iCal Free/Busy Automation** | Automatically switch the display between designated "Free" and "Busy" images based on your calendar status. Includes a persistent background worker for hands-off updates. |
+| **iCal Calendar Generator** | Paste an iCal feed URL into Settings. Click **📅 Generate Calendar Image** to render an 800×480 day-view showing today's meetings. The generated image is added to the gallery for manual or automatic transfer. |
 | **Device Configuration** | Configure MAC address, hardware raw type, dithering algorithm, rotation, negative colors, and advanced overrides (resolution, compression, mirror, BWR) from the sidebar. |
 | **Auto-Scan** | Leave the MAC address empty to auto-scan for nearby Gicisky tags. |
 | **Debug Console** | Toggle the debug console from Settings to access: raw hex command sending, Connect & Test, Disconnect, and Bluetooth adapter reset. Transfer progress and errors stream to the console in real time. |
@@ -163,7 +164,7 @@ You may also need cgroup permissions for `rfkill`/bluetooth.
 ### Uploading Images
 
 1. In the sidebar, use the **Choose Image** drop area or drag-and-drop a file.
-2. Click **Upload Image or Text** — the image appears in the gallery.
+2. Click **Upload Image or Text** — the image appears in the gallery with a sequence number (e.g., `#1`, `#2`).
 3. Click any gallery card to transfer it to the e-paper display.
 
 ### Deleting Images
@@ -181,7 +182,21 @@ The calendar renders:
 - **Red blocks** for meetings (with title and time labels)
 - **Red arrow** for the current time
 - **All-day events** in the header ribbon
-- **Overlapping events** side-by-side in columns
+### iCal Free/Busy Automation
+
+1. **Designate Images**: Upload two images to the gallery—one for when you are "Free" and one for when you are "Busy" (in a timed meeting). Note their card numbers (e.g., `#3`).
+2. **Configure**: In the **iCal Automation** section of the sidebar:
+   - Provide your **iCal Feed URL**.
+   - Select the respective images from the **"FREE" Image** and **"BUSY" Image** dropdowns (labeled with numbers).
+   - Check **ACTIVE AUTOMATION** and click **Save Settings**.
+3. **Automated Scheduling**: The system automatically manages a **cron job** for the current user. 
+   - Enabling automation adds a `*/5 * * * *` check to your crontab.
+   - Disabling automation removes the entry.
+   - You can also run a manual one-shot check: `python3 manage.py check_automation`.
+
+**Status Reporting**:
+- A pulsing green **RUNNING** badge will appear in the sidebar next to the **iCal Automation** title when the feature is enabled.
+- The **Debug Console** logs the current status (`[FREE]` or `[BUSY]`), the time of the **last successful update**, and the calculated time for the next display check.
 
 ### Debug Console
 
@@ -206,7 +221,9 @@ The calendar renders:
 | **Force Compress** | Enable/disable RLE compression in the data stream. |
 | **Force BWR** | Force black/white/red encoding even if the tag reports BW-only. |
 | **Force Mirror** | Mirror the image horizontally (required by some display types). |
-| **iCal Feed URL** | URL for calendar image generation. |
+| **iCal Feed URL** | URL for calendar image generation and automation. |
+| **Automation Active** | Toggle the background iCal free/busy check. |
+| **Free/Busy Images** | Select gallery images for each calendar state. |
 
 ---
 

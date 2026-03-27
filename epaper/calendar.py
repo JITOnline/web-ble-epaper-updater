@@ -6,6 +6,7 @@ Designed for BWR (black/white/red) e-paper displays.
 - Black: text, grid lines, headers
 - White: free time
 """
+
 import logging
 from datetime import datetime, date, timedelta, time
 from PIL import Image, ImageDraw, ImageFont
@@ -24,9 +25,9 @@ IMG_W, IMG_H = 800, 480
 HOUR_START = 7
 HOUR_END = 22
 
-HEADER_H = 64          # top bar for date + all-day events
+HEADER_H = 64  # top bar for date + all-day events
 FOOTER_H = 0
-SIDEBAR_W = 56         # left column for hour labels
+SIDEBAR_W = 56  # left column for hour labels
 
 GRID_LEFT = SIDEBAR_W
 GRID_TOP = HEADER_H
@@ -96,12 +97,18 @@ def fetch_events_today(ical_url, local_tz=None):
 
         # Determine if all-day
         if isinstance(dtstart, date) and not isinstance(dtstart, datetime):
-            events.append({
-                "summary": summary,
-                "start": datetime.combine(dtstart, time.min).replace(tzinfo=local_tz),
-                "end": datetime.combine(dtstart + timedelta(days=1), time.min).replace(tzinfo=local_tz),
-                "all_day": True,
-            })
+            events.append(
+                {
+                    "summary": summary,
+                    "start": datetime.combine(dtstart, time.min).replace(
+                        tzinfo=local_tz
+                    ),
+                    "end": datetime.combine(
+                        dtstart + timedelta(days=1), time.min
+                    ).replace(tzinfo=local_tz),
+                    "all_day": True,
+                }
+            )
             continue
 
         # Ensure timezone-aware
@@ -113,7 +120,9 @@ def fetch_events_today(ical_url, local_tz=None):
         if dtend_prop is not None:
             dtend = dtend_prop.dt
             if isinstance(dtend, date) and not isinstance(dtend, datetime):
-                dtend = datetime.combine(dtend, time.min).replace(tzinfo=local_tz)
+                dtend = datetime.combine(dtend, time.min).replace(
+                    tzinfo=local_tz
+                )
             elif dtend.tzinfo is None:
                 dtend = dtend.replace(tzinfo=local_tz)
             else:
@@ -122,12 +131,14 @@ def fetch_events_today(ical_url, local_tz=None):
             # Default 1-hour event
             dtend = dtstart + timedelta(hours=1)
 
-        events.append({
-            "summary": summary,
-            "start": dtstart,
-            "end": dtend,
-            "all_day": False,
-        })
+        events.append(
+            {
+                "summary": summary,
+                "start": dtstart,
+                "end": dtend,
+                "all_day": False,
+            }
+        )
 
     # Sort by start time
     events.sort(key=lambda e: e["start"])
@@ -136,6 +147,7 @@ def fetch_events_today(ical_url, local_tz=None):
 
 # ── Drawing helpers ───────────────────────────────────────────────
 
+
 def _draw_header(draw, now, all_day_events, fonts):
     """Draw the black header bar with date and all-day events."""
     draw.rectangle([0, 0, IMG_W, HEADER_H], fill=BLACK)
@@ -143,9 +155,8 @@ def _draw_header(draw, now, all_day_events, fonts):
     draw.text((16, 12), date_str, fill=WHITE, font=fonts["header"])
 
     if all_day_events:
-        allday_text = (
-            "All day: "
-            + " · ".join(e["summary"] for e in all_day_events)
+        allday_text = "All day: " + " · ".join(
+            e["summary"] for e in all_day_events
         )
         draw.text((16, 40), allday_text, fill=RED, font=fonts["allday"])
 
@@ -157,9 +168,7 @@ def _draw_hour_grid(draw, fonts):
         label = f"{h:02d}"
         draw.text((8, y - 7), label, fill=BLACK, font=fonts["hour"])
         line_color = LIGHT_GRAY if h != HOUR_START else BLACK
-        draw.line(
-            [(GRID_LEFT, y), (IMG_W, y)], fill=line_color, width=1
-        )
+        draw.line([(GRID_LEFT, y), (IMG_W, y)], fill=line_color, width=1)
 
     # Half-hour dashed lines
     for h in range(HOUR_START, HOUR_END):
@@ -167,13 +176,15 @@ def _draw_hour_grid(draw, fonts):
         for x in range(GRID_LEFT, IMG_W, 8):
             draw.line(
                 [(x, y), (min(x + 3, IMG_W), y)],
-                fill=LIGHT_GRAY, width=1,
+                fill=LIGHT_GRAY,
+                width=1,
             )
 
     # Left border of grid
     draw.line(
         [(GRID_LEFT, GRID_TOP), (GRID_LEFT, GRID_TOP + GRID_H)],
-        fill=BLACK, width=1,
+        fill=BLACK,
+        width=1,
     )
 
 
@@ -182,6 +193,7 @@ def _compute_column_layout(timed_events):
 
     Returns a list of (col_index, total_cols, event) tuples.
     """
+
     def _events_overlap(a, b):
         return a["start"] < b["end"] and b["start"] < a["end"]
 
@@ -192,9 +204,7 @@ def _compute_column_layout(timed_events):
     for ev in timed_events:
         ev_start = ev["start"]
         ev_end = ev["end"]
-        active_cols = [
-            (et, ci) for et, ci in active_cols if et > ev_start
-        ]
+        active_cols = [(et, ci) for et, ci in active_cols if et > ev_start]
         used = {ci for _, ci in active_cols}
         col = 0
         while col in used:
@@ -251,23 +261,28 @@ def _draw_event_block(draw, ev, col_idx, total_cols, fonts):
     block_h = y2 - y1
 
     time_str = (
-        f"{ev['start'].strftime('%-H:%M')}"
-        f"–{ev['end'].strftime('%-H:%M')}"
+        f"{ev['start'].strftime('%-H:%M')}" f"–{ev['end'].strftime('%-H:%M')}"
     )
 
     if block_h > 30:
         draw.text(
-            (text_x, text_y), ev["summary"][:30],
-            fill=WHITE, font=fonts["event"],
+            (text_x, text_y),
+            ev["summary"][:30],
+            fill=WHITE,
+            font=fonts["event"],
         )
         draw.text(
-            (text_x, text_y + 18), time_str,
-            fill=WHITE, font=fonts["event_small"],
+            (text_x, text_y + 18),
+            time_str,
+            fill=WHITE,
+            font=fonts["event_small"],
         )
     elif block_h > 16:
         draw.text(
-            (text_x, text_y), ev["summary"][:20],
-            fill=WHITE, font=fonts["event_small"],
+            (text_x, text_y),
+            ev["summary"][:20],
+            fill=WHITE,
+            font=fonts["event_small"],
         )
 
 
@@ -276,18 +291,22 @@ def _draw_current_time_marker(draw, now):
     if HOUR_START <= now.hour < HOUR_END:
         y_now = _y_for_time(now.time())
         draw.polygon(
-            [(GRID_LEFT, y_now),
-             (GRID_LEFT + 8, y_now - 4),
-             (GRID_LEFT + 8, y_now + 4)],
+            [
+                (GRID_LEFT, y_now),
+                (GRID_LEFT + 8, y_now - 4),
+                (GRID_LEFT + 8, y_now + 4),
+            ],
             fill=RED,
         )
         draw.line(
             [(GRID_LEFT + 8, y_now), (IMG_W, y_now)],
-            fill=RED, width=2,
+            fill=RED,
+            width=2,
         )
 
 
 # ── Main entry point ─────────────────────────────────────────────
+
 
 def generate_calendar_image(ical_url, local_tz=None):
     """Generate an 800x480 PIL Image showing today's calendar.
@@ -331,8 +350,10 @@ def generate_calendar_image(ical_url, local_tz=None):
         cx = GRID_LEFT + GRID_W // 2
         cy = GRID_TOP + GRID_H // 2
         draw.text(
-            (cx - 60, cy - 10), "No meetings today",
-            fill=BLACK, font=fonts["header"],
+            (cx - 60, cy - 10),
+            "No meetings today",
+            fill=BLACK,
+            font=fonts["header"],
         )
 
     return img

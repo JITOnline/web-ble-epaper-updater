@@ -6,18 +6,22 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('epaper', '0002_deviceconfig_force_compression_and_more'),
+        ("epaper", "0002_deviceconfig_force_compression_and_more"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='deviceconfig',
-            name='ical_url',
-            field=models.URLField(blank=True, help_text='iCal feed URL for calendar image generation', max_length=500),
+            model_name="deviceconfig",
+            name="ical_url",
+            field=models.URLField(
+                blank=True,
+                help_text="iCal feed URL for calendar image generation",
+                max_length=500,
+            ),
         ),
         migrations.AlterField(
-            model_name='deviceconfig',
-            name='force_mirror',
+            model_name="deviceconfig",
+            name="force_mirror",
             field=models.BooleanField(default=True),
         ),
     ]

@@ -124,7 +124,9 @@ class ScreenWriter:
             await self._send_request([0x01])
         except Exception as e:
             if "0x0e" in str(e):
-                logger.warning("Display is busy refreshing (0x0e - likely success).")
+                logger.warning(
+                    "Display is busy refreshing (0x0e - likely success)."
+                )
             else:
                 logger.error(f"Failed to send refresh: {e}")
 
@@ -147,9 +149,7 @@ class ScreenWriter:
     async def _handle_transfer_status(self, data):
         if data[1] == 0x00:
             next_part = int.from_bytes(data[2:6], "little")
-            logger.debug(
-                f"Success: image transfer request Part {next_part}"
-            )
+            logger.debug(f"Success: image transfer request Part {next_part}")
             await self.transfer_queue.put(next_part)
         elif data[1] == 0x08:
             logger.debug("Success: image transfer request")
@@ -159,9 +159,7 @@ class ScreenWriter:
             raise Exception(f"Error: image transfer ({data[1]})")
 
     async def notify_handler(self, _characteristic, data):
-        logger.debug(
-            f"Received notify: {[data[i] for i in range(len(data))]}"
-        )
+        logger.debug(f"Received notify: {[data[i] for i in range(len(data))]}")
         opcode = data[0]
 
         if opcode == 0x01:
@@ -185,8 +183,14 @@ class ScreenWriter:
     async def send_image_block(self, part):
         # BLE Write Without Response: ATT overhead = 3 bytes (1 opcode + 2 handle)
         # Max payload = MTU - 3. With MTU=247, max payload = 244.
-        mtu_val = self.device.mtu_size if (self.device.mtu_size and self.device.mtu_size > 3) else 23
-        mtu_payload_limit = mtu_val - 3  # max bytes we can write in one BLE message
+        mtu_val = (
+            self.device.mtu_size
+            if (self.device.mtu_size and self.device.mtu_size > 3)
+            else 23
+        )
+        mtu_payload_limit = (
+            mtu_val - 3
+        )  # max bytes we can write in one BLE message
 
         # The tag tells us its expected message size via CMD 01 response (typically 244).
         # Each message = 4 bytes part number + N bytes image data.
@@ -201,9 +205,11 @@ class ScreenWriter:
         assert (
             part < num_parts
         ), f"Part {part} is too high, there are only {num_parts} parts."
-        logger.info(f"Sending image part {part + 1}/{num_parts} (Size: {img_block_size})")
+        logger.info(
+            f"Sending image part {part + 1}/{num_parts} (Size: {img_block_size})"
+        )
         image_block = self.image[
-            part * img_block_size:part * img_block_size + img_block_size
+            part * img_block_size : part * img_block_size + img_block_size
         ]
         assert 0 < len(image_block) <= img_block_size
         message = bytearray([*part.to_bytes(4, "little"), *image_block])
@@ -221,7 +227,9 @@ async def send_data_to_screen(address, image_data):
             try:
                 await device._backend._acquire_mtu()
             except Exception:
-                logger.debug("MTU acquisition failed/unsupported. Using default.")
+                logger.debug(
+                    "MTU acquisition failed/unsupported. Using default."
+                )
 
         logger.debug(f"Negotated MTU: {device.mtu_size}")
 
@@ -234,5 +242,7 @@ async def send_data_to_screen(address, image_data):
         await screen.handle_transfer()
         logger.info("Transfer complete. Triggering refresh...")
         await screen.request_refresh()
-        await asyncio.sleep(1.0)  # Wait for display to start refresh before disconnecting
+        await asyncio.sleep(
+            1.0
+        )  # Wait for display to start refresh before disconnecting
         await screen.stop_notify()

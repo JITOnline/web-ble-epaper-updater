@@ -7,29 +7,55 @@ class Migration(migrations.Migration):
 
     initial = True
 
-    dependencies = [
-    ]
+    dependencies = []
 
     operations = [
         migrations.CreateModel(
-            name='DeviceConfig',
+            name="DeviceConfig",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('mac_address', models.CharField(blank=True, default='', max_length=17)),
-                ('rotate', models.BooleanField(default=False)),
-                ('negative', models.BooleanField(default=False)),
-                ('dithering', models.CharField(
-                    choices=[('none', 'None'), ('floydsteinberg', 'Floyd-Steinberg'), ('combined', 'Combined')],
-                    default='none', max_length=20,
-                )),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "mac_address",
+                    models.CharField(blank=True, default="", max_length=17),
+                ),
+                ("rotate", models.BooleanField(default=False)),
+                ("negative", models.BooleanField(default=False)),
+                (
+                    "dithering",
+                    models.CharField(
+                        choices=[
+                            ("none", "None"),
+                            ("floydsteinberg", "Floyd-Steinberg"),
+                            ("combined", "Combined"),
+                        ],
+                        default="none",
+                        max_length=20,
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='EpaperImage',
+            name="EpaperImage",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('image', models.ImageField(upload_to='epaper_images/')),
-                ('uploaded_at', models.DateTimeField(auto_now_add=True)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("image", models.ImageField(upload_to="epaper_images/")),
+                ("uploaded_at", models.DateTimeField(auto_now_add=True)),
             ],
         ),
     ]
