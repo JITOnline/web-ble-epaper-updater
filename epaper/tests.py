@@ -3,6 +3,11 @@
 from unittest import IsolatedAsyncioTestCase
 from unittest.mock import patch, MagicMock, AsyncMock
 from io import BytesIO
+try:
+    import pytest
+    _django_db_mark = pytest.mark.django_db
+except ImportError:
+    def _django_db_mark(cls): return cls
 
 from django.test import TestCase
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -607,6 +612,7 @@ class ExtendedViewTests(TestCase):
         self.assertTrue(mock_thread.called)
 
 
+@_django_db_mark
 class AsyncViewTests(IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
         from epaper.ble_logic import get_diagnostic_clients
