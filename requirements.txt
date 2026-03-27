@@ -17,3 +17,4 @@ requests==2.32.4
 sqlparse==0.5.5
 typing_extensions==4.15.0
 python-crontab==3.2.0
+whitenoise==6.12.0
