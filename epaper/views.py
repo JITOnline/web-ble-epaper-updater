@@ -288,7 +288,7 @@ def bt_reset_view(request):
     import subprocess, time as _time
     try:
         subprocess.run(['bluetoothctl', 'power', 'off'], capture_output=True, timeout=5)
-        _time.sleep(1)
+        _time.sleep(5)
         subprocess.run(['bluetoothctl', 'power', 'on'], capture_output=True, timeout=5)
         return JsonResponse({'status': 'success', 'message': 'Bluetooth adapter restarted.'})
     except Exception as e:
