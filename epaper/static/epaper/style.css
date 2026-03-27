@@ -167,7 +167,6 @@ body {
 .sidebar-content {
     flex: 1;
     min-height: 0;
-    overflow-y: auto;
 }
 
 .sidebar.collapsed {
@@ -205,11 +204,11 @@ body {
     background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-    background: rgba(255,255,255,0.1);
+    background: rgba(255, 255, 255, 0.2);
     border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-    background: rgba(255,255,255,0.2);
+    background: rgba(255, 255, 255, 0.4);
 }
 
 .sidebar h3 {
