@@ -164,7 +164,7 @@ If deploying inside a Proxmox LXC container, pass through D-Bus in the container
 
 ```ini
 # /etc/pve/lxc/<CTID>.conf
-lxc.mount.entry: /run/dbus run/dbus none bind,ro,create=dir 0 0
+lxc.mount.entry: /run/dbus run/dbus none bind,create=dir 0 0
 ```
 
 You may also need cgroup permissions for `rfkill`/bluetooth.
