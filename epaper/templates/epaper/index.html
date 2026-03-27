@@ -45,29 +45,45 @@
                     <label for="id_dithering">Dithering Algorithm</label>
                     {{ config_form.dithering }}
                 </div>
+                
                 <div class="form-group" style="padding: 1rem; border: 1px dashed var(--glass-border); border-radius: 8px;">
-                    <label>Force Advanced Override</label>
+                    <label>Hardware Overrides</label>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap:0.5rem; margin-bottom: 0.5rem;">
                         {{ config_form.width_override }}
                         {{ config_form.height_override }}
                     </div>
-                    <div class="form-group row-align" style="margin-bottom:0.5rem;">
-                        {{ config_form.force_compression }} <label for="id_force_compression">Force Compress</label>
+                    <div class="form-group row-align" style="margin-bottom:0.4rem;">
+                        {{ config_form.force_compression }} <label for="id_force_compression">Compress</label>
                     </div>
-                    <div class="form-group row-align" style="margin-bottom:0.5rem;">
+                    <div class="form-group row-align" style="margin-bottom:0.4rem;">
                         {{ config_form.force_second_color }} <label for="id_force_second_color">Force BWR</label>
                     </div>
                     <div class="form-group row-align">
-                        {{ config_form.force_mirror }} <label for="id_force_mirror">Force Mirror</label>
+                        {{ config_form.force_mirror }} <label for="id_force_mirror">Mirror</label>
                     </div>
                 </div>
 
-                <div class="form-group">
-                    <label for="id_ical_url">iCal Feed URL</label>
-                    {{ config_form.ical_url }}
+                <div class="automation-section" style="margin-top: 1.5rem; padding: 1rem; border: 1px solid var(--glass-border); border-radius: 12px; background: rgba(255,255,255,0.05);">
+                    <h3 style="margin-top:0; font-size: 1rem; color: #fff;">iCal Automation</h3>
+                    <div class="form-group row-align" style="margin-bottom: 1rem;">
+                        {{ config_form.automation_enabled }}
+                        <label for="id_automation_enabled" style="font-weight: 700; color: var(--primary);">ACTIVE AUTOMATION</label>
+                    </div>
+                    <div class="form-group">
+                        <label for="id_ical_url">iCal Feed URL</label>
+                        {{ config_form.ical_url }}
+                    </div>
+                    <div class="form-group">
+                        <label for="id_ical_free_image">"FREE" Image</label>
+                        {{ config_form.ical_free_image }}
+                    </div>
+                    <div class="form-group">
+                        <label for="id_ical_busy_image">"BUSY" Image</label>
+                        {{ config_form.ical_busy_image }}
+                    </div>
                 </div>
                 
-                <button type="submit" class="btn primary">Save Config</button>
+                <button type="submit" class="btn primary" style="margin-top: 1rem;">Save Settings</button>
             </form>
             
             {% if messages %}

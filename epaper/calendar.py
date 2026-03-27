@@ -98,8 +98,12 @@ def fetch_events_today(ical_url, local_tz=None):
         if isinstance(dtstart, date) and not isinstance(dtstart, datetime):
             events.append({
                 "summary": summary,
-                "start": datetime.combine(dtstart, time.min).replace(tzinfo=local_tz),
-                "end": datetime.combine(dtstart + timedelta(days=1), time.min).replace(tzinfo=local_tz),
+                "start": datetime.combine(
+                    dtstart, time.min
+                ).replace(tzinfo=local_tz),
+                "end": datetime.combine(
+                    dtstart + timedelta(days=1), time.min
+                ).replace(tzinfo=local_tz),
                 "all_day": True,
             })
             continue
@@ -113,7 +117,9 @@ def fetch_events_today(ical_url, local_tz=None):
         if dtend_prop is not None:
             dtend = dtend_prop.dt
             if isinstance(dtend, date) and not isinstance(dtend, datetime):
-                dtend = datetime.combine(dtend, time.min).replace(tzinfo=local_tz)
+                dtend = datetime.combine(dtend, time.min).replace(
+                    tzinfo=local_tz
+                )
             elif dtend.tzinfo is None:
                 dtend = dtend.replace(tzinfo=local_tz)
             else:

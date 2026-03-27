@@ -22,7 +22,7 @@ class EpaperImageForm(forms.ModelForm):
 class DeviceConfigForm(forms.ModelForm):
     class Meta:
         model = DeviceConfig
-        fields = '__all__'
+        exclude = ('last_automation_image',)
         widgets = {
             'mac_address': forms.TextInput(
                 attrs={
@@ -46,4 +46,6 @@ class DeviceConfigForm(forms.ModelForm):
                     'placeholder': 'https://calendar.google.com/...ical',
                 }
             ),
+            'ical_free_image': forms.Select(attrs={'class': 'select-input'}),
+            'ical_busy_image': forms.Select(attrs={'class': 'select-input'}),
         }

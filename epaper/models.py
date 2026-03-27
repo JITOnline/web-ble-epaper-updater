@@ -8,7 +8,9 @@ class EpaperImage(models.Model):
     )
     text_overlay = models.CharField(
         max_length=255, blank=True,
-        help_text="Text to overlay on a blank canvas instead of uploading an image"
+        help_text=(
+            "Text to overlay on a blank canvas instead of uploading an image"
+        )
     )
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
@@ -44,15 +46,35 @@ class DeviceConfig(models.Model):
     force_second_color = models.BooleanField(default=True)
     force_mirror = models.BooleanField(default=True)
 
-    # Calendar integration
+    # iCal Integration and Free/Busy automation
     ical_url = models.URLField(
         max_length=500, blank=True,
         help_text="iCal feed URL for calendar image generation"
     )
+    ical_free_image = models.ForeignKey(
+        EpaperImage, related_name='free_configs',
+        on_delete=models.SET_NULL, null=True, blank=True,
+        help_text="Image to show when no meetings are active"
+    )
+    ical_busy_image = models.ForeignKey(
+        EpaperImage, related_name='busy_configs',
+        on_delete=models.SET_NULL, null=True, blank=True,
+        help_text="Image to show when in a meeting"
+    )
+    automation_enabled = models.BooleanField(
+        default=False,
+        help_text="Enable automatic switching based on iCal status"
+    )
+    last_automation_image = models.ForeignKey(
+        EpaperImage, related_name='last_automated',
+        on_delete=models.SET_NULL, null=True, blank=True
+    )
 
     def save(self, *args, **kwargs):
         if not self.pk and DeviceConfig.objects.exists():
-            raise ValidationError('There can be only one DeviceConfig instance')
+            raise ValidationError(
+                'There can be only one DeviceConfig instance'
+            )
         return super().save(*args, **kwargs)
 
     @classmethod

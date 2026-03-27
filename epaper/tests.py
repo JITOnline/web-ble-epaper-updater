@@ -11,9 +11,9 @@ import numpy as np
 
 from epaper.models import EpaperImage, DeviceConfig
 from epaper.forms import EpaperImageForm, DeviceConfigForm
-from epaper.views import (
-    _configure_tag_model,
-    _prepare_image,
+from epaper.ble_logic import (
+    configure_tag_model,
+    prepare_image,
 )
 from gicisky_tag.encoder import (
     Dither,
@@ -105,6 +105,9 @@ class DeviceConfigFormTest(TestCase):
             'force_second_color': True,
             'force_mirror': True,
             'ical_url': '',
+            'ical_free_image': '',
+            'ical_busy_image': '',
+            'automation_enabled': False,
         })
         self.assertTrue(form.is_valid())
 
@@ -225,10 +228,11 @@ class CalendarViewTest(TestCase):
 #  View helper tests
 # ══════════════════════════════════════════════════════════════════
 
+
 class ConfigureTagModelTest(TestCase):
     def test_defaults_no_raw_type(self):
         cfg = DeviceConfig.get_solo()
-        tag = _configure_tag_model(cfg, None)
+        tag = configure_tag_model(cfg, None)
         self.assertEqual(tag.width, 250)
         self.assertEqual(tag.height, 122)
         self.assertTrue(tag.use_compression)
@@ -237,27 +241,27 @@ class ConfigureTagModelTest(TestCase):
         cfg = DeviceConfig.get_solo()
         cfg.width_override = 800
         cfg.height_override = 480
-        tag = _configure_tag_model(cfg, None)
+        tag = configure_tag_model(cfg, None)
         self.assertEqual(tag.width, 800)
         self.assertEqual(tag.height, 480)
 
     def test_force_second_color_bw_to_bwr(self):
         cfg = DeviceConfig.get_solo()
         cfg.force_second_color = True
-        tag = _configure_tag_model(cfg, None)
+        tag = configure_tag_model(cfg, None)
         # Default TagModel is already BWR, so this should stay BWR
         self.assertEqual(tag.color_type, ColorType.BWR)
 
     def test_disable_second_color(self):
         cfg = DeviceConfig.get_solo()
         cfg.force_second_color = False
-        tag = _configure_tag_model(cfg, None)
+        tag = configure_tag_model(cfg, None)
         self.assertEqual(tag.color_type, ColorType.BW)
 
     def test_raw_type_hex_override(self):
         cfg = DeviceConfig.get_solo()
         cfg.raw_type = '410B'
-        tag = _configure_tag_model(cfg, None)
+        tag = configure_tag_model(cfg, None)
         # raw_type should be parsed from config.raw_type
         self.assertIsInstance(tag, TagModel)
 
@@ -267,7 +271,7 @@ class PrepareImageTest(TestCase):
         cfg = DeviceConfig.get_solo()
         obj = EpaperImage.objects.create(text_overlay="Hello")
         tag = TagModel()
-        data = _prepare_image(obj, tag, cfg)
+        data = prepare_image(obj, tag, cfg)
         self.assertIsInstance(data, (bytes, bytearray))
         self.assertGreater(len(data), 0)
 
@@ -277,7 +281,7 @@ class PrepareImageTest(TestCase):
         cfg.negative = True
         obj = EpaperImage.objects.create(text_overlay="Test")
         tag = TagModel()
-        data = _prepare_image(obj, tag, cfg)
+        data = prepare_image(obj, tag, cfg)
         self.assertIsInstance(data, (bytes, bytearray))
 
 
@@ -441,9 +445,12 @@ class ScreenWriterNotifyHandlerTest(TestCase):
 #  Calendar logic tests
 # ══════════════════════════════════════════════════════════════════
 
+
 class CalendarLogicTest(TestCase):
     def test_y_for_time(self):
-        from epaper.calendar import _y_for_time, GRID_TOP, GRID_H, HOUR_START, TOTAL_HOURS
+        from epaper.calendar import (
+            _y_for_time, GRID_TOP, GRID_H, HOUR_START, TOTAL_HOURS
+        )
         from datetime import time
         # Start of day
         self.assertEqual(_y_for_time(time(HOUR_START, 0)), GRID_TOP)
@@ -474,7 +481,7 @@ class CalendarLogicTest(TestCase):
             "DTSTART": MagicMock(dt=datetime(2026, 3, 27, 10, 0)),
             "DTEND": MagicMock(dt=datetime(2026, 3, 27, 11, 0)),
         }.get(k, default)
-       
+
         mock_between = MagicMock()
         mock_between.between.return_value = [mock_event]
         mock_of.return_value = mock_between
@@ -555,15 +562,17 @@ class ExtendedViewTests(TestCase):
         self.assertEqual(resp.get('Content-Type'), 'application/x-ndjson')
         self.assertTrue(mock_thread.called)
 
+
+
 class AsyncViewTests(TestCase):
     async def test_resolve_device_no_mac(self):
-        with patch('epaper.views.find_device') as mock_find:
-            from epaper.views import _resolve_device
+        with patch('epaper.ble_logic.find_device') as mock_find:
+            from epaper.ble_logic import resolve_device
             import queue
             mock_find.return_value = {"address": "11:22:33:44:55:66", "raw_type": 0x1234}
             cfg = MagicMock(mac_address="")
             q = queue.Queue()
-            addr, rtype = await _resolve_device(cfg, q)
+            addr, rtype = await resolve_device(cfg, q)
             self.assertEqual(addr, "11:22:33:44:55:66")
             self.assertEqual(rtype, 0x1234)
 
@@ -573,16 +582,16 @@ class AsyncViewTests(TestCase):
             from epaper.models import DeviceConfig
             await DeviceConfig.objects.aget_or_create(id=1)
             await DeviceConfig.objects.filter(id=1).aupdate(mac_address="11:22:33:44:55:66")
-           
+
             # Mock request
             request = MagicMock()
             request.method = 'POST'
-           
+
             # Mock BleakClient
             mock_instance = mock_bleak.return_value
             mock_instance.connect = AsyncMock()
             mock_instance.write_gatt_char = AsyncMock()
-           
+
             resp = await connect_device_view(request)
             self.assertEqual(resp.status_code, 200, resp.content)
             self.assertIn(b'Connected', resp.content)
@@ -593,15 +602,15 @@ class AsyncViewTests(TestCase):
             from epaper.models import DeviceConfig
             await DeviceConfig.objects.aget_or_create(id=1)
             await DeviceConfig.objects.filter(id=1).aupdate(mac_address="11:22:33:44:55:66")
-           
+
             request = MagicMock()
             request.method = 'POST'
             request.body = b'{"cmd": "010203"}'
-           
+
             mock_instance = AsyncMock()
             mock_instance.__aenter__.return_value = mock_instance
             mock_bleak.return_value = mock_instance
-           
+
             resp = await send_cmd_view(request)
             self.assertEqual(resp.status_code, 200, resp.content)
             self.assertIn(b'Successfully sent', resp.content)
@@ -610,10 +619,10 @@ class AsyncViewTests(TestCase):
         from epaper.views import disconnect_device_view
         from epaper.models import DeviceConfig
         await DeviceConfig.objects.aget_or_create(id=1)
-       
+
         request = MagicMock()
         request.method = 'POST'
-       
+
         resp = await disconnect_device_view(request)
         self.assertEqual(resp.status_code, 200, resp.content)
         self.assertIn(b'No active connection', resp.content)
@@ -630,7 +639,7 @@ class ScreenWriterDetailTest(IsolatedAsyncioTestCase):
         self.mock_device.mtu_size = 247
         self.image_data = b'\x01\x02\x03\x04' * 100 # 400 bytes
         self.sw = ScreenWriter(self.mock_device, self.image_data)
-       
+
         # We need a side effect to put None into notify_handler_results
         # so _send_request doesn't hang.
         async def mock_write(char, data, response=False):
@@ -641,7 +650,7 @@ class ScreenWriterDetailTest(IsolatedAsyncioTestCase):
     async def test_requests(self):
         await self.sw.request_block_size()
         self.mock_device.write_gatt_char.assert_called()
-       
+
         self.sw.block_size = 244
         await self.sw.request_write_screen()
         await self.sw.request_start_transfer()
@@ -692,8 +701,83 @@ class ScreenWriterDetailTest(IsolatedAsyncioTestCase):
         # Mock handle_transfer which waits for queue
         await self.sw.transfer_queue.put(0)
         await self.sw.transfer_queue.put(None) # stop
-       
+
         # We need to mock send_image_block because it's called inside
         with patch.object(self.sw, 'send_image_block', new_callable=AsyncMock) as mock_send:
             await self.sw.handle_transfer()
             mock_send.assert_called_with(0)
+
+# ══════════════════════════════════════════════════════════════════
+#  Automation tests
+# ══════════════════════════════════════════════════════════════════
+
+
+
+class AutomationTests(TestCase):
+    def setUp(self):
+        self.config = DeviceConfig.get_solo()
+        self.free_img = EpaperImage.objects.create(text_overlay="Free")
+        self.busy_img = EpaperImage.objects.create(text_overlay="Busy")
+        self.config.ical_free_image = self.free_img
+        self.config.ical_busy_image = self.busy_img
+        self.config.ical_url = "http://example.com/ical"
+        self.config.save()
+
+    @patch('epaper.automation.fetch_events_today')
+    @patch('epaper.automation.run_with_cleanup', new_callable=AsyncMock)
+    def test_automation_busy(self, mock_run, mock_fetch):
+        from epaper.automation import check_and_update_automation
+        from datetime import datetime
+        from datetime import timezone as dt_timezone
+
+        # Current time within meeting
+        mock_fetch.return_value = [{
+            "summary": "Busy Meeting",
+            "start": datetime.now(dt_timezone.utc).replace(hour=0, minute=0),
+            "end": datetime.now(dt_timezone.utc).replace(hour=23, minute=59),
+            "all_day": False
+        }]
+
+        self.config.automation_enabled = True
+        self.config.save()
+
+        check_and_update_automation()
+
+        # Should have triggered run_with_cleanup with busy_img
+        self.assertTrue(mock_run.called)
+        # Check tracking
+        self.config.refresh_from_db()
+        self.assertEqual(self.config.last_automation_image, self.busy_img)
+
+    @patch('epaper.automation.fetch_events_today')
+    @patch('epaper.automation.run_with_cleanup', new_callable=AsyncMock)
+    def test_automation_free(self, mock_run, mock_fetch):
+        from epaper.automation import check_and_update_automation
+
+        # No meetings
+        mock_fetch.return_value = []
+
+        self.config.automation_enabled = True
+        self.config.save()
+
+        check_and_update_automation()
+
+        # Should have triggered run_with_cleanup with free_img
+        self.assertTrue(mock_run.called)
+        self.config.refresh_from_db()
+        self.assertEqual(self.config.last_automation_image, self.free_img)
+
+    @patch('epaper.automation.fetch_events_today')
+    @patch('epaper.automation.run_with_cleanup', new_callable=AsyncMock)
+    def test_automation_no_change(self, mock_run, mock_fetch):
+        from epaper.automation import check_and_update_automation
+
+        mock_fetch.return_value = []
+        self.config.automation_enabled = True
+        self.config.last_automation_image = self.free_img
+        self.config.save()
+
+        check_and_update_automation()
+
+        # Should NOT have triggered run_with_cleanup because already free
+        self.assertFalse(mock_run.called)
