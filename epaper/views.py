@@ -46,22 +46,38 @@ class QueueHandler(logging.Handler):
 
 def index_view(request):
     config = DeviceConfig.get_solo()
+    old_automation = config.automation_enabled
+    
     if request.method == 'POST':
         config_form = DeviceConfigForm(request.POST, instance=config)
         if config_form.is_valid():
             config_form.save()
             messages.success(request, 'Configuration updated.')
+            
+            # Management automation cron job
+            from .automation import set_automation_cron, check_and_update_automation
+            if config.automation_enabled != old_automation:
+                set_automation_cron(config.automation_enabled)
+                status = "ENABLED" if config.automation_enabled else "DISABLED"
+                request.session['automation_alert'] = status
+                if config.automation_enabled:
+                    check_and_update_automation()
+            
             return redirect('index')
     else:
         config_form = DeviceConfigForm(instance=config)
 
     upload_form = EpaperImageForm()
-    images = EpaperImage.objects.all().order_by('-uploaded_at')
-
+    # List images by uploaded_at desc
+    images_list = list(EpaperImage.objects.all().order_by('uploaded_at'))
+    # Assign index (counting from oldest to newest) but we usually show newest first?
+    # Actually, numbering based on current view/order is fine.
+    
     context = {
         'config_form': config_form,
         'upload_form': upload_form,
-        'images': images,
+        'images': images_list[::-1], # Newest first in view
+        'automation_alert': request.session.pop('automation_alert', None)
     }
     return render(request, 'epaper/index.html', context)
 
@@ -360,3 +376,54 @@ def generate_calendar_view(request):
         request, 'Calendar image generated and added to gallery.'
     )
     return redirect('index')
+
+
+def automation_status_view(request):
+    """API for fetching current automation state and next update time."""
+    from .models import DeviceConfig
+    from .calendar import fetch_events_today
+    from datetime import datetime
+    from dateutil import tz as dateutil_tz
+
+    config = DeviceConfig.get_solo()
+    if not config.automation_enabled or not config.ical_url:
+        return JsonResponse({
+            'state_str': 'DISABLED',
+            'next_str': ''
+        })
+
+    try:
+        local_tz = dateutil_tz.tzlocal()
+        now = datetime.now(tz=local_tz)
+        events = fetch_events_today(config.ical_url, local_tz=local_tz)
+        
+        timed_events = [ev for ev in events if not ev["all_day"]]
+        timed_events.sort(key=lambda x: x["start"])
+
+        is_busy = False
+        busy_event = None
+        next_event = None
+        for ev in timed_events:
+            if ev["start"] <= now <= ev["end"]:
+                is_busy = True
+                busy_event = ev
+            elif ev["start"] > now:
+                if next_event is None or ev["start"] < next_event["start"]:
+                    next_event = ev
+
+        state_str = f"[{'BUSY' if is_busy else 'FREE'}]"
+        if is_busy and busy_event:
+            state_str += f" - {busy_event['summary']}"
+
+        next_str = ""
+        if is_busy and busy_event:
+            next_str = f"Next change at: {busy_event['end'].strftime('%H:%M')}"
+        elif next_event:
+            next_str = f"Next event at: {next_event['start'].strftime('%H:%M')}"
+
+        return JsonResponse({
+            'state_str': state_str,
+            'next_str': next_str
+        })
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)

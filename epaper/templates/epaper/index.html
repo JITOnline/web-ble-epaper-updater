@@ -134,6 +134,7 @@
             <div class="gallery-grid">
                 {% for img in images %}
                 <div class="gallery-card" onclick="triggerUpdate({{ img.id }})">
+                    <div class="gallery-number">#{{ forloop.revindex }}</div>
                     <button type="button" class="delete-btn" title="Delete image" onclick="event.stopPropagation(); deleteImage({{ img.id }})">✕</button>
                     <div class="img-wrapper">
                         {% if img.image %}
@@ -331,6 +332,26 @@
                 fileMsg.textContent = 'or drag and drop here';
             }
         });
+
+        function fetchStatus() {
+            logDebug("Fetching automation state...");
+            fetch('{% url "automation_status" %}')
+            .then(res => res.json())
+            .then(data => {
+                logDebug(`iCal Status: ${data.state_str} ${data.next_str}`);
+            })
+            .catch(err => logDebug(`ERROR fetching status: ${err}`));
+        }
+
+        {% if automation_alert %}
+        document.addEventListener('DOMContentLoaded', () => {
+            const status = "{{ automation_alert }}";
+            logDebug(`AUTOMATION ${status}`);
+            if(status === "ENABLED") {
+                fetchStatus();
+            }
+        });
+        {% endif %}
     </script>
 </body>
 </html>

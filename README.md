@@ -164,7 +164,7 @@ You may also need cgroup permissions for `rfkill`/bluetooth.
 ### Uploading Images
 
 1. In the sidebar, use the **Choose Image** drop area or drag-and-drop a file.
-2. Click **Upload Image or Text** — the image appears in the gallery.
+2. Click **Upload Image or Text** — the image appears in the gallery with a sequence number (e.g., `#1`, `#2`).
 3. Click any gallery card to transfer it to the e-paper display.
 
 ### Deleting Images
@@ -184,18 +184,17 @@ The calendar renders:
 - **All-day events** in the header ribbon
 ### iCal Free/Busy Automation
 
-1. **Designate Images**: Upload two images to the gallery—one for when you are "Free" and one for when you are "Busy" (in a timed meeting).
+1. **Designate Images**: Upload two images to the gallery—one for when you are "Free" and one for when you are "Busy" (in a timed meeting). Note their card numbers (e.g., `#3`).
 2. **Configure**: In the **iCal Automation** section of the sidebar:
    - Provide your **iCal Feed URL**.
-   - Select the respective images from the **"FREE" Image** and **"BUSY" Image** dropdowns.
+   - Select the respective images from the **"FREE" Image** and **"BUSY" Image** dropdowns (labeled with numbers).
    - Check **ACTIVE AUTOMATION** and click **Save Settings**.
-3. **Run the Worker**: The automation requires a background loop to check the calendar. Run the management command:
-   ```bash
-   python3 manage.py run_automation --interval 300
-   ```
-   *Tip: Use a systemd unit or tmux to keep this running in the background.*
+3. **Automated Scheduling**: The system automatically manages a **cron job** for the current user. 
+   - Enabling automation adds a `*/5 * * * *` check to your crontab.
+   - Disabling automation removes the entry.
+   - You can also run a manual one-shot check: `python3 manage.py check_automation`.
 
-The system will skip updates if the status hasn't changed, preserving battery life on the tags.
+**Status Reporting**: When automation is active, the **Debug Console** logs current status (`[FREE]` or `[BUSY]`) and the calculated time for the next display update.
 
 ### Debug Console
 

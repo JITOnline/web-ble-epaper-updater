@@ -781,3 +781,47 @@ class AutomationTests(TestCase):
 
         # Should NOT have triggered run_with_cleanup because already free
         self.assertFalse(mock_run.called)
+
+    @patch('epaper.automation.CronTab')
+    def test_set_automation_cron(self, mock_cron_class):
+        from epaper.automation import set_automation_cron
+        mock_cron = mock_cron_class.return_value
+        
+        # Enable
+        set_automation_cron(True)
+        self.assertTrue(mock_cron.new.called)
+        self.assertTrue(mock_cron.write.called)
+        
+        # Disable
+        mock_cron.reset_mock()
+        set_automation_cron(False)
+        self.assertTrue(mock_cron.remove_all.called)
+        self.assertTrue(mock_cron.write.called)
+
+    @patch('epaper.calendar.fetch_events_today')
+    def test_automation_status_view(self, mock_fetch):
+        from django.urls import reverse
+        from datetime import datetime, timezone as dt_timezone
+        
+        # Busy state
+        mock_fetch.return_value = [{
+            "summary": "Meeting X",
+            "start": datetime.now(dt_timezone.utc).replace(hour=0, minute=0),
+            "end": datetime.now(dt_timezone.utc).replace(hour=23, minute=59),
+            "all_day": False
+        }]
+        self.config.automation_enabled = True
+        self.config.save()
+        
+        response = self.client.get(reverse('automation_status'))
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIn("BUSY", data['state_str'])
+        self.assertIn("Meeting X", data['state_str'])
+        self.assertIn("Next change at", data['next_str'])
+
+        # Free state
+        mock_fetch.return_value = []
+        response = self.client.get(reverse('automation_status'))
+        data = response.json()
+        self.assertIn("FREE", data['state_str'])

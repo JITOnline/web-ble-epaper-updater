@@ -360,6 +360,7 @@ input[type="checkbox"]:checked::after {
     letter-spacing: -0.025em;
     background: linear-gradient(135deg, #fff 0%, #94a3b8 100%);
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
 }
 
@@ -517,4 +518,18 @@ input[type="checkbox"]:checked::after {
     .sidebar {
         width: 100%;
     }
+}
+
+.gallery-number {
+    position: absolute;
+    top: 0.5rem;
+    left: 0.5rem;
+    background: rgba(15, 23, 42, 0.8);
+    color: var(--primary);
+    padding: 0.2rem 0.6rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    z-index: 5;
+    border: 1px solid var(--glass-border);
 }

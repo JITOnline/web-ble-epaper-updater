@@ -49,3 +49,22 @@ class DeviceConfigForm(forms.ModelForm):
             'ical_free_image': forms.Select(attrs={'class': 'select-input'}),
             'ical_busy_image': forms.Select(attrs={'class': 'select-input'}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Sequence numbering: newest first matches the gallery forloop.revindex logic
+        all_imgs = list(EpaperImage.objects.all().order_by('uploaded_at'))
+        count = len(all_imgs)
+        # Create a mapping: ID -> #Number
+        numbered_choices = [('', '---------')]
+        for i, img in enumerate(all_imgs):
+            # i=0 is oldest. revindex for oldest is 1.
+            # wait, gallery shows newest first.
+            # newest index is count.
+            # oldest index is 1.
+            num = i + 1
+            label = f"#{num} - {img}"
+            numbered_choices.append((img.id, label))
+        
+        self.fields['ical_free_image'].choices = numbered_choices
+        self.fields['ical_busy_image'].choices = numbered_choices
