@@ -56,7 +56,8 @@ def parser():
         type=str,
         help=(
             "Bluetooth address of the Gicisky tag to be updated. "
-            "If not provided, the script will scan and use the first Gicisky tag that it can find."
+            "If not provided, the script will scan and use the "
+            "first Gicisky tag that it can find."
         ),
     )
     parser.add_argument(
