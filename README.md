@@ -76,7 +76,7 @@ sudo systemctl restart bluetooth
 
 ```bash
 cd /srv
-git clone https://github.com/JITOnline/web-ble-epaper-updater.git)
+git clone https://github.com/JITOnline/web-ble-epaper-updater.git
 cd web-ble-epaper-updater
 
 python3 -m venv venv
