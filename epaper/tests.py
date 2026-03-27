@@ -25,6 +25,7 @@ from gicisky_tag.encoder import (
     compress_bitmap_generic,
 )
 from gicisky_tag.writer import ScreenWriter
+import epaper.automation
 
 # ── Helper ────────────────────────────────────────────────────────
 
@@ -606,7 +607,11 @@ class ExtendedViewTests(TestCase):
         self.assertTrue(mock_thread.called)
 
 
-class AsyncViewTests(TestCase):
+class AsyncViewTests(IsolatedAsyncioTestCase):
+    async def asyncSetUp(self):
+        from epaper.ble_logic import get_diagnostic_clients
+        get_diagnostic_clients().clear()
+
     async def test_resolve_device_no_mac(self):
         with patch("epaper.ble_logic.find_device") as mock_find:
             from epaper.ble_logic import resolve_device
@@ -627,19 +632,23 @@ class AsyncViewTests(TestCase):
             from epaper.views import connect_device_view
             from epaper.models import DeviceConfig
 
-            await DeviceConfig.objects.aget_or_create(id=1)
-            await DeviceConfig.objects.filter(id=1).aupdate(
-                mac_address="11:22:33:44:55:66"
-            )
+            # Ensure solo config exists
+            from asgiref.sync import sync_to_async
+            config = await sync_to_async(DeviceConfig.get_solo)()
+            config.mac_address = "11:22:33:44:55:66"
+            await sync_to_async(config.save)()
 
-            # Mock request
+            # Mock request with body
             request = MagicMock()
             request.method = "POST"
+            request.body = b'{"mac_address": "11:22:33:44:55:66"}'
 
-            # Mock BleakClient
-            mock_instance = mock_bleak.return_value
+            # BleakClient instance
+            mock_instance = AsyncMock()
+            mock_bleak.return_value = mock_instance
             mock_instance.connect = AsyncMock()
             mock_instance.write_gatt_char = AsyncMock()
+            mock_instance.is_connected = True
 
             resp = await connect_device_view(request)
             self.assertEqual(resp.status_code, 200, resp.content)
@@ -650,18 +659,22 @@ class AsyncViewTests(TestCase):
             from epaper.views import send_cmd_view
             from epaper.models import DeviceConfig
 
-            await DeviceConfig.objects.aget_or_create(id=1)
-            await DeviceConfig.objects.filter(id=1).aupdate(
-                mac_address="11:22:33:44:55:66"
-            )
+            from asgiref.sync import sync_to_async
+            config = await sync_to_async(DeviceConfig.get_solo)()
+            config.mac_address = "11:22:33:44:55:66"
+            await sync_to_async(config.save)()
 
             request = MagicMock()
             request.method = "POST"
             request.body = b'{"cmd": "010203"}'
 
+            # mock_instance must support 'async with'
             mock_instance = AsyncMock()
             mock_instance.__aenter__.return_value = mock_instance
+            mock_instance.__aexit__.return_value = False
             mock_bleak.return_value = mock_instance
+            
+            mock_instance.write_gatt_char = AsyncMock()
 
             resp = await send_cmd_view(request)
             self.assertEqual(resp.status_code, 200, resp.content)
@@ -670,15 +683,20 @@ class AsyncViewTests(TestCase):
     async def test_disconnect_device_no_conn(self):
         from epaper.views import disconnect_device_view
         from epaper.models import DeviceConfig
+        from asgiref.sync import sync_to_async
 
-        await DeviceConfig.objects.aget_or_create(id=1)
+        # Ensure solo exists but mac is empty
+        config = await sync_to_async(DeviceConfig.get_solo)()
+        config.mac_address = ""
+        await sync_to_async(config.save)()
 
         request = MagicMock()
         request.method = "POST"
+        request.body = b'{"mac_address": ""}'
 
         resp = await disconnect_device_view(request)
         self.assertEqual(resp.status_code, 200, resp.content)
-        self.assertIn(b"No active connection", resp.content)
+        self.assertIn(b"Disconnected session", resp.content)
 
 
 # ══════════════════════════════════════════════════════════════════
