@@ -829,6 +829,15 @@ class AutomationTests(TestCase):
         self.assertIn("Meeting X", data['state_str'])
         self.assertIn("Next change at", data['next_str'])
 
+        # Check last update str (initially empty)
+        self.assertEqual(data['last_str'], "")
+
+        # Simulate check_automation running
+        self.config.last_automation_time = datetime.now()
+        self.config.save()
+        response = self.client.get(reverse('automation_status'))
+        self.assertIn("Last update", response.json()['last_str'])
+
         # Free state
         mock_fetch.return_value = []
         response = self.client.get(reverse('automation_status'))

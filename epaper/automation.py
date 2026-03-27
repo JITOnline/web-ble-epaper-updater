@@ -103,6 +103,7 @@ def check_and_update_automation():
 
         # Update tracking
         config.last_automation_image = target_image
+        config.last_automation_time = now
         config.save()
         logger.info("Automation: Update successful.")
 

@@ -69,6 +69,7 @@ class DeviceConfig(models.Model):
         EpaperImage, related_name='last_automated',
         on_delete=models.SET_NULL, null=True, blank=True
     )
+    last_automation_time = models.DateTimeField(null=True, blank=True)
 
     def save(self, *args, **kwargs):
         if not self.pk and DeviceConfig.objects.exists():

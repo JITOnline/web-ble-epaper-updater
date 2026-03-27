@@ -70,8 +70,10 @@ def index_view(request):
     upload_form = EpaperImageForm()
     # List images by uploaded_at desc
     images_list = list(EpaperImage.objects.all().order_by('uploaded_at'))
-    # Assign index (counting from oldest to newest) but we usually show newest first?
-    # Actually, numbering based on current view/order is fine.
+    # Pre-calculate numbers so we don't rely on forloop.revindex if it fails
+    # i=0 is oldest. num=1.
+    for i, img in enumerate(images_list):
+        img.num = i + 1
     
     context = {
         'config_form': config_form,
@@ -421,9 +423,14 @@ def automation_status_view(request):
         elif next_event:
             next_str = f"Next event at: {next_event['start'].strftime('%H:%M')}"
 
+        last_str = ""
+        if config.last_automation_time:
+            last_str = f"Last update: {config.last_automation_time.strftime('%H:%M')}"
+
         return JsonResponse({
             'state_str': state_str,
-            'next_str': next_str
+            'next_str': next_str,
+            'last_str': last_str
         })
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)

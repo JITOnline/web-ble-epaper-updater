@@ -6,7 +6,7 @@
     <title>Gicisky E-Ink BLE Configurator</title>
     <meta name="description" content="Manage and upload images to your Gicisky Bluetooth E-Paper Display from a sleek, localized web interface.">
     {% load static %}
-    <link rel="stylesheet" href="{% static 'epaper/style.css' %}?v=1.1">
+    <link rel="stylesheet" href="{% static 'epaper/style.css' %}?v=1.2">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
@@ -141,7 +141,7 @@
             <div class="gallery-grid">
                 {% for img in images %}
                 <div class="gallery-card" onclick="triggerUpdate({{ img.id }})">
-                    <div class="gallery-number">#{{ forloop.revindex }}</div>
+                    <div class="gallery-number">#{{ img.num }}</div>
                     <button type="button" class="delete-btn" title="Delete image" onclick="event.stopPropagation(); deleteImage({{ img.id }})">✕</button>
                     <div class="img-wrapper">
                         {% if img.image %}
@@ -345,7 +345,10 @@
             fetch('{% url "automation_status" %}')
             .then(res => res.json())
             .then(data => {
-                logDebug(`iCal Status: ${data.state_str} ${data.next_str}`);
+                let msg = `iCal Status: ${data.state_str}`;
+                if(data.last_str) msg += ` | ${data.last_str}`;
+                if(data.next_str) msg += ` | ${data.next_str}`;
+                logDebug(msg);
             })
             .catch(err => logDebug(`ERROR fetching status: ${err}`));
         }

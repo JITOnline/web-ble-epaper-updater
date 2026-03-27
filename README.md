@@ -196,7 +196,7 @@ The calendar renders:
 
 **Status Reporting**:
 - A pulsing green **RUNNING** badge will appear in the sidebar next to the **iCal Automation** title when the feature is enabled.
-- The **Debug Console** logs the current status (`[FREE]` or `[BUSY]`) and the calculated time for the next display update whenever the page loads or settings change.
+- The **Debug Console** logs the current status (`[FREE]` or `[BUSY]`), the time of the **last successful update**, and the calculated time for the next display check.
 
 ### Debug Console
 
