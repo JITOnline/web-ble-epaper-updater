@@ -50,7 +50,7 @@ class ScreenWriter:
         )
 
     async def stop_notify(self):
-        logger.debug(f"Stop notify")
+        logger.debug("Stop notify")
         await self.device.stop_notify(ScreenWriter.REQUEST_CHARACTERISTIC)
 
     async def _send_request(self, data):
@@ -118,7 +118,7 @@ class ScreenWriter:
     async def request_refresh(self):
         # Many tags are busy processing image data immediately after the transfer.
         # We add a small delay and handle potential 'Unlikely Error' (0x0e) gracefully.
-        await asyncio.sleep(0.5) 
+        await asyncio.sleep(0.5)
         logger.info("Request: display refresh")
         try:
             await self._send_request([0x01])
@@ -135,7 +135,7 @@ class ScreenWriter:
         logger.debug(f"Received notify: {[data[i] for i in range(len(data))]}")
         if data[0] == 0x01:
             assert len(data) == 3
-            logger.debug(f"Success: block size request")
+            logger.debug("Success: block size request")
             self.block_size = int.from_bytes(data[1:], "little")
             logger.debug(f"Received block size: {self.block_size}")
         elif data[0] == 0x02:
@@ -155,18 +155,18 @@ class ScreenWriter:
                 # Push a new block to be sent by `handle_transfer`
                 await self.transfer_queue.put(next_part)
             elif data[1] == 0x08:
-                logger.debug(f"Success: image transfer request")
-                logger.debug(f"Screen write complete")
+                logger.debug("Success: image transfer request")
+                logger.debug("Screen write complete")
                 # Signal to `handle_transfer` that the transfer is complete
                 await self.transfer_queue.put(None)
             else:
                 raise Exception(f"Error: image transfer ({data[1]})")
         elif data[0] == 0x19:
-            logger.debug(f"Success: set new address request")
+            logger.debug("Success: set new address request")
         elif data[0] == 0x40:
-            logger.debug(f"Success: set remote device setting request")
+            logger.debug("Success: set remote device setting request")
         elif data[0] == 0x50:
-            logger.debug(f"Success: exit remote device setting request")
+            logger.debug("Success: exit remote device setting request")
         else:
             logger.error(f"Unknown state: {data}")
 
@@ -175,7 +175,7 @@ class ScreenWriter:
         # Max payload = MTU - 3. With MTU=247, max payload = 244.
         mtu_val = self.device.mtu_size if (self.device.mtu_size and self.device.mtu_size > 3) else 23
         mtu_payload_limit = mtu_val - 3  # max bytes we can write in one BLE message
-        
+
         # The tag tells us its expected message size via CMD 01 response (typically 244).
         # Each message = 4 bytes part number + N bytes image data.
         # CRITICAL: We MUST use the tag's block_size as the message size, because the tag
@@ -183,7 +183,7 @@ class ScreenWriter:
         # every part after the first will be offset-shifted, causing garbled output.
         hw_block_size = self.block_size if self.block_size else 244
         message_size = min(mtu_payload_limit, hw_block_size)
-        
+
         img_block_size = message_size - 4  # 240 bytes of image data per part
         num_parts = math.ceil(len(self.image) / img_block_size)
         assert (
@@ -191,7 +191,7 @@ class ScreenWriter:
         ), f"Part {part} is too high, there are only {num_parts} parts."
         logger.info(f"Sending image part {part + 1}/{num_parts} (Size: {img_block_size})")
         image_block = self.image[
-            part * img_block_size : part * img_block_size + img_block_size
+            part * img_block_size:part * img_block_size + img_block_size
         ]
         assert 0 < len(image_block) <= img_block_size
         message = bytearray([*part.to_bytes(4, "little"), *image_block])
@@ -203,18 +203,18 @@ async def send_data_to_screen(address, image_data):
     async with BleakClient(address) as device:
         # Give the service discovery and internal stack time to settle
         await asyncio.sleep(1.0)
-        
+
         # BlueZ doesn't always negotiate the MTU immediately. We trigger it explicitly.
         if device._backend.__class__.__name__ == "BleakClientBlueZDBus":
             try:
                 await device._backend._acquire_mtu()
-            except:
+            except Exception:
                 logger.debug("MTU acquisition failed/unsupported. Using default.")
-        
+
         logger.debug(f"Negotated MTU: {device.mtu_size}")
 
         screen = ScreenWriter(device, image_data)
-        logger.info(f"Sending image data...")
+        logger.info("Sending image data...")
         await screen.start_notify()
         await screen.request_block_size()
         await screen.request_write_screen()

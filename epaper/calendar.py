@@ -7,8 +7,7 @@ Designed for BWR (black/white/red) e-paper displays.
 - White: free time
 """
 import logging
-from datetime import datetime, date, timedelta, time, timezone
-from io import BytesIO
+from datetime import datetime, date, timedelta, time
 from PIL import Image, ImageDraw, ImageFont
 
 import requests
@@ -94,7 +93,7 @@ def fetch_events_today(ical_url, local_tz=None):
         summary = str(ev.get("SUMMARY", "Busy"))
         dtstart = ev.get("DTSTART").dt
         dtend_prop = ev.get("DTEND")
-        
+
         # Determine if all-day
         if isinstance(dtstart, date) and not isinstance(dtstart, datetime):
             events.append({
