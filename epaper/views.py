@@ -13,7 +13,7 @@ from gicisky_tag.encoder import encode_image, Dither, TagModel, ColorType
 from gicisky_tag.writer import send_data_to_screen
 from gicisky_tag.scanner import find_device
 from bleak import BleakClient
-from bleak.exc import BleakDeviceNotFoundError
+from bleak.exc import BleakDBusError, BleakDeviceNotFoundError
 from .calendar import generate_calendar_image
 import logging
 
@@ -156,6 +156,11 @@ def trigger_update_view(request, image_id):
             msg_queue.put(
                 f"ERROR: Device {mac_address} not found. "
                 "Make sure the tag is powered on and nearby, then try again."
+            )
+        except BleakDBusError as e:
+            msg_queue.put(
+                f"ERROR: Bluetooth adapter error: {e}. "
+                "Try clicking 'Reset Bluetooth' and retrying."
             )
         except Exception as e:
             import traceback
