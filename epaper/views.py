@@ -125,15 +125,17 @@ def delete_image_view(request, image_id):
 
 def _ndjson_event_stream(msg_queue):
     """Yield newline-delimited JSON messages until sentinel None."""
+    # Yield initial message to force Gunicorn to see activity immediately
+    yield json.dumps({"msg": "Connection established. Waiting for BLE sequence..."}) + "\n"
     while True:
         try:
-            # Wake up every 10s to keep connection and worker alive
-            msg = msg_queue.get(timeout=10.0)
+            # Wake up according to user-requested 120s timeout
+            msg = msg_queue.get(timeout=120.0)
             if msg is None:
                 break
             yield json.dumps({"msg": msg}) + "\n"
         except queue.Empty:
-            # Standard heartbeat to avoid browser/proxy timeouts
+            # Keepalive JSON to avoid browser/proxy timeouts
             yield json.dumps({"keepalive": True}) + "\n"
         except Exception as e:
             yield json.dumps({"msg": f"ERROR: Stream error: {str(e)}"}) + "\n"
