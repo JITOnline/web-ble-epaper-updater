@@ -105,7 +105,7 @@ User=dietpi
 Group=dietpi
 WorkingDirectory=/srv/web-ble-epaper-updater
 Environment="DJANGO_SETTINGS_MODULE=config.settings"
-ExecStart=/srv/web-ble-epaper-updater/venv/bin/gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 2
+ExecStart=/srv/web-ble-epaper-updater/venv/bin/gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 2 --timeout 120 --worker-class gthread
 Restart=always
 
 [Install]
