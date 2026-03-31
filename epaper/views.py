@@ -24,6 +24,10 @@ from .ble_logic import (
     get_diagnostic_clients,
     get_client_lock,
 )
+from .automation import (
+    set_automation_cron,
+    check_and_update_automation,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -57,11 +61,6 @@ def index_view(request):
             messages.success(request, "Configuration updated.")
 
             # Management automation cron job
-            from .automation import (
-                set_automation_cron,
-                check_and_update_automation,
-            )
-
             if config.automation_enabled != old_automation:
                 set_automation_cron(config.automation_enabled)
                 status = (
@@ -69,7 +68,9 @@ def index_view(request):
                 )
                 request.session["automation_alert"] = status
                 if config.automation_enabled:
-                    check_and_update_automation()
+                    threading.Thread(
+                        target=check_and_update_automation, daemon=True
+                    ).start()
 
             return redirect("index")
     else:
@@ -124,11 +125,21 @@ def delete_image_view(request, image_id):
 
 def _ndjson_event_stream(msg_queue):
     """Yield newline-delimited JSON messages until sentinel None."""
+    # Yield initial message to force Gunicorn to see activity immediately
+    yield json.dumps({"msg": "Connection established. Waiting for BLE sequence..."}) + "\n"
     while True:
-        msg = msg_queue.get()
-        if msg is None:
+        try:
+            # Wake up according to user-requested 120s timeout
+            msg = msg_queue.get(timeout=120.0)
+            if msg is None:
+                break
+            yield json.dumps({"msg": msg}) + "\n"
+        except queue.Empty:
+            # Keepalive JSON to avoid browser/proxy timeouts
+            yield json.dumps({"keepalive": True}) + "\n"
+        except Exception as e:
+            yield json.dumps({"msg": f"ERROR: Stream error: {str(e)}"}) + "\n"
             break
-        yield json.dumps({"msg": msg}) + "\n"
 
 
 # ── trigger_update view ──────────────────────────────────────────

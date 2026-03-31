@@ -612,6 +612,45 @@ class ExtendedViewTests(TestCase):
         self.assertTrue(mock_thread.called)
 
 
+class IndexViewAutomationTest(TestCase):
+    @patch("epaper.views.threading.Thread")
+    @patch("epaper.views.set_automation_cron")
+    def test_post_enable_automation_triggers_thread(
+        self, mock_cron, mock_thread
+    ):
+        cfg = DeviceConfig.get_solo()
+        cfg.automation_enabled = False
+        cfg.save()
+
+        # Mock the form data
+        data = {
+            "mac_address": "AA:BB:CC:DD:EE:FF",
+            "raw_type": "",
+            "rotate": False,
+            "negative": False,
+            "dithering": "none",
+            "force_compression": True,
+            "force_second_color": True,
+            "force_mirror": True,
+            "ical_url": "https://example.com/ical",
+            "automation_enabled": True,
+        }
+
+        response = self.client.post("/", data)
+
+        self.assertEqual(response.status_code, 302)
+        cfg.refresh_from_db()
+        self.assertTrue(cfg.automation_enabled)
+
+        # Verify that automation was triggered in a background thread
+        self.assertTrue(mock_thread.called)
+        # Check that the target function is check_and_update_automation
+        from epaper.automation import check_and_update_automation
+
+        self.assertEqual(mock_thread.call_args[1]["target"], check_and_update_automation)
+        self.assertEqual(mock_thread.call_args[1]["daemon"], True)
+
+
 @_django_db_mark
 class AsyncViewTests(IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
