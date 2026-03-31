@@ -12,6 +12,7 @@ A Django-based web application for managing and updating Gicisky BLE e-paper dis
 | :------------------------------: | :------------------------------: |
 | ![Settings 1](docs/Gicisky%20E-Ink%20BLE%20Configurator%202.png) | ![Settings 2](docs/Gicisky%20E-Ink%20BLE%20Configurator%203.png) |
 
+
 ## Features
 
 | Feature                       | Description                                                                                                                                      |
@@ -28,7 +29,8 @@ A Django-based web application for managing and updating Gicisky BLE e-paper dis
 | **Bluetooth Reset**           | One-click `bluetoothctl` adapter power-cycling from the dashboard.                                                                                |
 | **Collapsible Sidebar**       | Click the Settings header to minimize the sidebar and maximize image viewing space.                                                              |
 | **BLE Error Handling**        | Real-time user feedback for Bluetooth issues like out-of-range tags or busy adapters.                                                            |
-| **Unit Testing**              | Comprehensive suite of 70 validated tests covering BLE logic, iCal parsing, image encoding, and dashboard views.                                 |
+| **Asynchronous Stability**    | Background threading for all BLE operations to prevent Gunicorn worker timeouts and ensure a responsive UI.                                      |
+| **Unit Testing**              | Comprehensive suite of 71 validated tests covering BLE logic, iCal parsing, image encoding, and dashboard views.                                 |
 
 ## Architecture & Requirements
 
@@ -69,9 +71,10 @@ sudo systemctl restart bluetooth
 > **Important:** The `fonts-dejavu-core` package provides the TTF fonts used by the calendar image generator. Without it, the calendar will fall back to Pillow's tiny default bitmap font.
 
 > **Pillow rebuild:** If you installed Pillow *before* the image library packages (`libjpeg-dev`, etc.), it may have built without JPEG/PNG support. Force-reinstall it:
-> ```bash
-> /srv/web-ble-epaper-updater/venv/bin/pip install --force-reinstall --no-cache-dir Pillow
-> ```
+
+```bash
+/srv/web-ble-epaper-updater/venv/bin/pip install --force-reinstall --no-cache-dir Pillow
+```
 
 ### 2. Application Setup
 

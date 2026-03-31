@@ -24,6 +24,10 @@ from .ble_logic import (
     get_diagnostic_clients,
     get_client_lock,
 )
+from .automation import (
+    set_automation_cron,
+    check_and_update_automation,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -57,11 +61,6 @@ def index_view(request):
             messages.success(request, "Configuration updated.")
 
             # Management automation cron job
-            from .automation import (
-                set_automation_cron,
-                check_and_update_automation,
-            )
-
             if config.automation_enabled != old_automation:
                 set_automation_cron(config.automation_enabled)
                 status = (
@@ -69,7 +68,9 @@ def index_view(request):
                 )
                 request.session["automation_alert"] = status
                 if config.automation_enabled:
-                    check_and_update_automation()
+                    threading.Thread(
+                        target=check_and_update_automation, daemon=True
+                    ).start()
 
             return redirect("index")
     else:

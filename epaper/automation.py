@@ -110,6 +110,10 @@ def check_and_update_automation():
 
     except Exception as e:
         logger.error(f"Automation error: {e}", exc_info=True)
+    finally:
+        from django.db import connection
+
+        connection.close()
 
 
 def set_automation_cron(enabled=True):
