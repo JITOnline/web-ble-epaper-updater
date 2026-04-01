@@ -401,6 +401,45 @@ def generate_calendar_view(request):
     return redirect("index")
 
 
+def generate_prompt_view(request):
+    if request.method != "POST":
+        return JsonResponse(
+            {"status": "error", "message": "Invalid request method"},
+            status=405,
+        )
+
+    prompt = request.POST.get("prompt", "").strip()
+    if not prompt:
+        messages.error(request, "Prompt cannot be empty.")
+        return redirect("index")
+
+    try:
+        import urllib.parse
+        import requests
+        from PIL import Image
+
+        url = f"https://image.pollinations.ai/prompt/{urllib.parse.quote(prompt)}?width=800&height=480&nologo=true"
+        response = requests.get(url, timeout=30)
+        response.raise_for_status()
+
+        img = Image.open(BytesIO(response.content)).convert("L")
+        buf = BytesIO()
+        img.save(buf, format="PNG")
+        buf.seek(0)
+
+        fname = f"prompt_{int(_time.time())}.png"
+        epaper_img = EpaperImage()
+        epaper_img.image.save(fname, ContentFile(buf.read()), save=True)
+
+        messages.success(
+            request, f"Image for prompt '{prompt}' generated successfully."
+        )
+    except Exception as e:
+        messages.error(request, f"Failed to generate prompt image: {e}")
+
+    return redirect("index")
+
+
 def automation_status_view(request):
     """API for fetching current automation state and next update time."""
     from .models import DeviceConfig

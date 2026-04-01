@@ -22,6 +22,7 @@ urlpatterns = [
         views.generate_calendar_view,
         name="generate_calendar",
     ),
+    path("generate-prompt/", views.generate_prompt_view, name="generate_prompt"),
     path("bt-reset/", views.bt_reset_view, name="bt_reset"),
     path(
         "automation-status/",
