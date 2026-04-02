@@ -57,7 +57,8 @@ sudo apt update
 sudo apt install -y \
     python3-venv python3-pip python3-dev \
     libglib2.0-dev libdbus-1-dev \
-    libjpeg-dev zlib1g-dev libfreetype-dev liblcms2-dev libopenjp2-7 libtiff-dev \
+    libjpeg-dev zlib1g-dev libxcb1 libx11-6 \
+    libfreetype6-dev liblcms2-dev libopenjp2-7 libtiff-dev \
     pi-bluetooth bluez bluez-firmware rfkill \
     fonts-dejavu-core
 

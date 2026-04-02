@@ -7,6 +7,8 @@ RUN apt-get update && apt-get install -y \
     libdbus-1-dev \
     libjpeg-dev \
     zlib1g-dev \
+    libxcb1 \
+    libx11-6 \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
