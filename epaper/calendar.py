@@ -120,9 +120,7 @@ def fetch_events_today(ical_url, local_tz=None):
         if dtend_prop is not None:
             dtend = dtend_prop.dt
             if isinstance(dtend, date) and not isinstance(dtend, datetime):
-                dtend = datetime.combine(dtend, time.min).replace(
-                    tzinfo=local_tz
-                )
+                dtend = datetime.combine(dtend, time.min).replace(tzinfo=local_tz)
             elif dtend.tzinfo is None:
                 dtend = dtend.replace(tzinfo=local_tz)
             else:
@@ -155,9 +153,7 @@ def _draw_header(draw, now, all_day_events, fonts):
     draw.text((16, 12), date_str, fill=WHITE, font=fonts["header"])
 
     if all_day_events:
-        allday_text = "All day: " + " · ".join(
-            e["summary"] for e in all_day_events
-        )
+        allday_text = "All day: " + " · ".join(e["summary"] for e in all_day_events)
         draw.text((16, 40), allday_text, fill=RED, font=fonts["allday"])
 
 
@@ -230,10 +226,7 @@ def _compute_column_layout(timed_events):
         for j in group:
             col_info[j] = (columns[j][0], total)
 
-    return [
-        (col_info[i][0], col_info[i][1], ev)
-        for i, (_, ev) in enumerate(columns)
-    ]
+    return [(col_info[i][0], col_info[i][1], ev) for i, (_, ev) in enumerate(columns)]
 
 
 def _draw_event_block(draw, ev, col_idx, total_cols, fonts):
@@ -260,9 +253,7 @@ def _draw_event_block(draw, ev, col_idx, total_cols, fonts):
     text_y = y1 + 2
     block_h = y2 - y1
 
-    time_str = (
-        f"{ev['start'].strftime('%-H:%M')}" f"–{ev['end'].strftime('%-H:%M')}"
-    )
+    time_str = f"{ev['start'].strftime('%-H:%M')}" f"–{ev['end'].strftime('%-H:%M')}"
 
     if block_h > 30:
         draw.text(

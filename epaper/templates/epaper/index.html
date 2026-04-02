@@ -47,6 +47,19 @@
                     </button>
                 </form>
             </div>
+
+            <div class="prompt-section" style="margin-top: 1rem; margin-bottom: 2rem; padding: 1rem; border: 1px solid var(--glass-border); border-radius: 12px; background: rgba(255,255,255,0.05);">
+                <h3 style="margin-top: 0; margin-bottom: 0.5rem; font-size: 1rem; color: #fff;">AI Generation</h3>
+                <form method="post" action="{% url 'generate_prompt' %}">
+                    {% csrf_token %}
+                    <div class="form-group" style="margin-bottom: 0.5rem;">
+                        <input type="text" name="prompt" placeholder="A grayscale landscape..." required style="width: 100%; box-sizing: border-box; padding: 0.5rem; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(0,0,0,0.2); color: white;" />
+                    </div>
+                    <button type="submit" class="btn secondary" style="width: 100%; margin: 0;">
+                        <span class="cal-icon">✨</span> Generate Image
+                    </button>
+                </form>
+            </div>
             </div>
 
             <div class="sidebar-toggle" onclick="this.closest('.sidebar').classList.toggle('collapsed')">

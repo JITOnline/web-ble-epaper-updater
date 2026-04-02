@@ -70,11 +70,7 @@ def dither_image_bwr(image, dithering: Dither, debug_folder=None):
         bwr_palette_image.putpalette(black_color + white_color + red_color)
         quant_image = image.convert("RGB").quantize(
             palette=bwr_palette_image,
-            dither=(
-                Image.NONE
-                if dithering == Dither.NONE
-                else Image.FLOYDSTEINBERG
-            ),
+            dither=(Image.NONE if dithering == Dither.NONE else Image.FLOYDSTEINBERG),
         )
 
         if debug_folder is not None:
@@ -138,12 +134,8 @@ class TagModel:
 
         # rawType = (data.getUint8(4) << 8) | data.getUint8(0);
         screen_resolution = (raw_type >> 5) & 63
-        self.display_type = (
-            raw_type >> 3
-        ) & 3  # 0: TFT, 1: EPA, 2: EPA1, 3: EPA2
-        self.color_type = ColorType(
-            ((raw_type >> 1) & 3) + ((raw_type >> 10) & 12)
-        )
+        self.display_type = (raw_type >> 3) & 3  # 0: TFT, 1: EPA, 2: EPA1, 3: EPA2
+        self.color_type = ColorType(((raw_type >> 1) & 3) + ((raw_type >> 10) & 12))
         self.use_compression = (raw_type & 0x4000) == 0
         self.mirror_image = self.display_type in (0, 1, 3)
 
@@ -195,9 +187,7 @@ class TagModel:
         return f"TagModel({self.width}x{self.height}, color={self.color_type.name}, compression={self.use_compression})"
 
 
-def encode_image(
-    image, tag_model=None, dithering=Dither.NONE, debug_folder=None
-):
+def encode_image(image, tag_model=None, dithering=Dither.NONE, debug_folder=None):
     if tag_model is None:
         tag_model = TagModel()
 
@@ -211,9 +201,7 @@ def encode_image(
     if tag_model.mirror_image:
         image = image.transpose(Image.FLIP_LEFT_RIGHT)
 
-    bwr_image = dither_image_bwr(
-        image, dithering=dithering, debug_folder=debug_folder
-    )
+    bwr_image = dither_image_bwr(image, dithering=dithering, debug_folder=debug_folder)
     bwr_pixels = np.asarray(bwr_image.convert("RGB")).astype(int)
 
     # BW bitmap: From ATC1441: White is 1, Black and Red are 0
@@ -245,9 +233,7 @@ def encode_image(
     )
 
     if tag_model.use_compression:
-        bw_data = compress_bitmap_generic(
-            bw_packed, tag_model.width, tag_model.height
-        )
+        bw_data = compress_bitmap_generic(bw_packed, tag_model.width, tag_model.height)
         red_data = compress_bitmap_generic(
             red_packed, tag_model.width, tag_model.height
         )

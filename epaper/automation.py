@@ -49,9 +49,7 @@ def check_and_update_automation():
                 if next_event is None or ev["start"] < next_event["start"]:
                     next_event = ev
 
-        target_image = (
-            config.ical_busy_image if is_busy else config.ical_free_image
-        )
+        target_image = config.ical_busy_image if is_busy else config.ical_free_image
 
         # Log current state
         state_str = f"STATUS: [{'BUSY' if is_busy else 'FREE'}]"
@@ -85,9 +83,7 @@ def check_and_update_automation():
             # Already set, skip update
             return
 
-        logger.info(
-            f"Automation: Change detected. New target image: {target_image}"
-        )
+        logger.info(f"Automation: Change detected. New target image: {target_image}")
 
         # Trigger update
         msg_queue = DummyQueue()
@@ -97,9 +93,7 @@ def check_and_update_automation():
         import asyncio
 
         asyncio.run(
-            run_with_cleanup(
-                target_image.id, msg_queue, gicisky_logger, handler
-            )
+            run_with_cleanup(target_image.id, msg_queue, gicisky_logger, handler)
         )
 
         # Update tracking
@@ -129,9 +123,7 @@ def set_automation_cron(enabled=True):
             # Get path to manage.py
             cur_file = os.path.abspath(__file__)
             # epaper/automation.py -> epaper -> web-ble-epaper-updater
-            base_dir = os.path.dirname(
-                os.path.dirname(os.path.dirname(cur_file))
-            )
+            base_dir = os.path.dirname(os.path.dirname(os.path.dirname(cur_file)))
             manage_py = os.path.join(base_dir, "manage.py")
             python_bin = sys.executable
 

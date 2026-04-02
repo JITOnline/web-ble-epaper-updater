@@ -29,6 +29,10 @@ from .automation import (
     check_and_update_automation,
 )
 
+import urllib.parse
+import requests
+from PIL import Image
+
 logger = logging.getLogger(__name__)
 
 
@@ -63,9 +67,7 @@ def index_view(request):
             # Management automation cron job
             if config.automation_enabled != old_automation:
                 set_automation_cron(config.automation_enabled)
-                status = (
-                    "ENABLED" if config.automation_enabled else "DISABLED"
-                )
+                status = "ENABLED" if config.automation_enabled else "DISABLED"
                 request.session["automation_alert"] = status
                 if config.automation_enabled:
                     threading.Thread(
@@ -126,7 +128,9 @@ def delete_image_view(request, image_id):
 def _ndjson_event_stream(msg_queue):
     """Yield newline-delimited JSON messages until sentinel None."""
     # Yield initial message to force Gunicorn to see activity immediately
-    yield json.dumps({"msg": "Connection established. Waiting for BLE sequence..."}) + "\n"
+    yield json.dumps(
+        {"msg": "Connection established. Waiting for BLE sequence..."}
+    ) + "\n"
     while True:
         try:
             # Wake up according to user-requested 120s timeout
@@ -164,9 +168,7 @@ def trigger_update_view(request, image_id):
     gicisky_logger.addHandler(handler)
 
     def thread_worker():
-        asyncio.run(
-            run_with_cleanup(image_id, msg_queue, gicisky_logger, handler)
-        )
+        asyncio.run(run_with_cleanup(image_id, msg_queue, gicisky_logger, handler))
 
     threading.Thread(target=thread_worker, daemon=True).start()
 
@@ -186,9 +188,7 @@ async def send_cmd_view(request):
                 from bleak import BleakScanner
 
                 devices = await BleakScanner.discover(timeout=5.0)
-                found = [
-                    f"{d.address} ({d.name or 'Unknown'})" for d in devices
-                ]
+                found = [f"{d.address} ({d.name or 'Unknown'})" for d in devices]
                 if found:
                     msg = "Found: " + ", ".join(found)
                 else:
@@ -216,9 +216,7 @@ async def send_cmd_view(request):
             return JsonResponse(
                 {
                     "status": "success",
-                    "message": (
-                        f"Successfully sent {cmd_hex} to {mac_address}"
-                    ),
+                    "message": (f"Successfully sent {cmd_hex} to {mac_address}"),
                 }
             )
         except ValueError:
@@ -227,34 +225,38 @@ async def send_cmd_view(request):
                 status=400,
             )
         except Exception as e:
-            return JsonResponse(
-                {"status": "error", "message": str(e)}, status=400
-            )
+            return JsonResponse({"status": "error", "message": str(e)}, status=400)
     return JsonResponse({"status": "error"}, status=405)
 
 
 async def connect_device_view(request):
     if request.method != "POST":
-        return JsonResponse({"status": "error", "message": "Invalid method"}, status=405)
+        return JsonResponse(
+            {"status": "error", "message": "Invalid method"}, status=405
+        )
 
     try:
         from asgiref.sync import sync_to_async
+
         config = await sync_to_async(DeviceConfig.get_solo)()
-        
+
         # Priority: explicit MAC from request body, then database
         mac_address = None
         try:
             data = json.loads(request.body) if request.body else {}
             mac_address = data.get("mac_address")
-        except:
+        except Exception:
             pass
-            
+
         if not mac_address:
             mac_address = config.mac_address
 
         if not mac_address:
             return JsonResponse(
-                {"status": "error", "message": "No MAC address specified in form or settings."},
+                {
+                    "status": "error",
+                    "message": "No MAC address specified in form or settings.",
+                },
                 status=400,
             )
 
@@ -263,10 +265,12 @@ async def connect_device_view(request):
             if mac_address in diag_clients:
                 client = diag_clients[mac_address]
                 if client.is_connected:
-                    return JsonResponse({
-                        "status": "success",
-                        "message": f"Already connected to {mac_address}."
-                    })
+                    return JsonResponse(
+                        {
+                            "status": "success",
+                            "message": f"Already connected to {mac_address}.",
+                        }
+                    )
                 else:
                     diag_clients.pop(mac_address)
 
@@ -279,10 +283,12 @@ async def connect_device_view(request):
                 bytes([0x01]),
                 response=True,
             )
-            return JsonResponse({
-                "status": "success",
-                "message": f"Connected to {mac_address}. Session active. Verified with CMD 01."
-            })
+            return JsonResponse(
+                {
+                    "status": "success",
+                    "message": f"Connected to {mac_address}. Session active. Verified with CMD 01.",
+                }
+            )
     except Exception as e:
         return JsonResponse(
             {"status": "error", "message": f"Connection failed: {str(e)}"},
@@ -292,45 +298,47 @@ async def connect_device_view(request):
 
 async def disconnect_device_view(request):
     if request.method != "POST":
-        return JsonResponse({"status": "error", "message": "Invalid method"}, status=405)
+        return JsonResponse(
+            {"status": "error", "message": "Invalid method"}, status=405
+        )
 
     try:
         from asgiref.sync import sync_to_async
+
         config = await sync_to_async(DeviceConfig.get_solo)()
-        
+
         mac_address = None
         try:
             data = json.loads(request.body) if request.body else {}
             mac_address = data.get("mac_address")
-        except:
+        except Exception:
             pass
-            
+
         if not mac_address:
             mac_address = config.mac_address
 
         async with _get_client_lock():
             diag_clients = _get_diag_clients()
-            found_and_removed = False
-            
+
             # If explicit mac provided, disconnect that
             if mac_address and mac_address in diag_clients:
                 client = diag_clients.pop(mac_address)
                 if client.is_connected:
                     await client.disconnect()
-                found_and_removed = True
-            
+
             # Also cleanup empty/dangling if no mac provided
             if not mac_address:
                 for addr in list(diag_clients.keys()):
                     client = diag_clients.pop(addr)
                     if client.is_connected:
                         await client.disconnect()
-                found_and_removed = True
 
-        return JsonResponse({
-            "status": "success", 
-            "message": f"Disconnected session for {mac_address or 'all devices'}."
-        })
+        return JsonResponse(
+            {
+                "status": "success",
+                "message": f"Disconnected session for {mac_address or 'all devices'}.",
+            }
+        )
     except Exception as e:
         return JsonResponse(
             {"status": "error", "message": f"Disconnect failed: {str(e)}"},
@@ -395,9 +403,47 @@ def generate_calendar_view(request):
     epaper_img = EpaperImage()
     epaper_img.image.save(fname, ContentFile(buf.read()), save=True)
 
-    messages.success(
-        request, "Calendar image generated and added to gallery."
-    )
+    messages.success(request, "Calendar image generated and added to gallery.")
+    return redirect("index")
+
+
+def generate_prompt_view(request):
+    if request.method != "POST":
+        return JsonResponse(
+            {"status": "error", "message": "Invalid request method"},
+            status=405,
+        )
+
+    prompt = request.POST.get("prompt", "").strip()
+    if not prompt:
+        messages.error(request, "Prompt cannot be empty.")
+        return redirect("index")
+
+    try:
+
+        v_prompt = urllib.parse.quote(prompt)
+        url = (
+            f"https://image.pollinations.ai/prompt/{v_prompt}"
+            "?width=800&height=480&nologo=true"
+        )
+        response = requests.get(url, timeout=120)
+        response.raise_for_status()
+
+        img = Image.open(BytesIO(response.content)).convert("L")
+        buf = BytesIO()
+        img.save(buf, format="PNG")
+        buf.seek(0)
+
+        fname = f"prompt_{int(_time.time())}.png"
+        epaper_img = EpaperImage()
+        epaper_img.image.save(fname, ContentFile(buf.read()), save=True)
+
+        messages.success(
+            request, f"Image for prompt '{prompt}' generated successfully."
+        )
+    except Exception as e:
+        messages.error(request, f"Failed to generate prompt image: {e}")
+
     return redirect("index")
 
 
@@ -437,13 +483,9 @@ def automation_status_view(request):
 
         next_str = ""
         if is_busy and busy_event:
-            next_str = (
-                f"Next change at: {busy_event['end'].strftime('%H:%M')}"
-            )
+            next_str = f"Next change at: {busy_event['end'].strftime('%H:%M')}"
         elif next_event:
-            next_str = (
-                f"Next event at: {next_event['start'].strftime('%H:%M')}"
-            )
+            next_str = f"Next event at: {next_event['start'].strftime('%H:%M')}"
 
         last_str = ""
         if config.last_automation_time:

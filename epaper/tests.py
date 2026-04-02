@@ -3,11 +3,16 @@
 from unittest import IsolatedAsyncioTestCase
 from unittest.mock import patch, MagicMock, AsyncMock
 from io import BytesIO
+
 try:
     import pytest
+
     _django_db_mark = pytest.mark.django_db
 except ImportError:
-    def _django_db_mark(cls): return cls
+
+    def _django_db_mark(cls):
+        return cls
+
 
 from django.test import TestCase
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -30,7 +35,6 @@ from gicisky_tag.encoder import (
     compress_bitmap_generic,
 )
 from gicisky_tag.writer import ScreenWriter
-import epaper.automation
 
 # ── Helper ────────────────────────────────────────────────────────
 
@@ -56,9 +60,7 @@ class EpaperImageModelTest(TestCase):
 
     def test_create_with_image(self):
         png = _make_png()
-        uploaded = SimpleUploadedFile(
-            "test.png", png.read(), content_type="image/png"
-        )
+        uploaded = SimpleUploadedFile("test.png", png.read(), content_type="image/png")
         obj = EpaperImage.objects.create(image=uploaded)
         self.assertIn("File", str(obj))
         obj.image.delete(save=False)
@@ -151,6 +153,7 @@ class IndexViewTest(TestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertIn("config_form", resp.context)
         self.assertNotIn("RUNNING", resp.content.decode())
+        self.assertIn("AI Generation", resp.content.decode())
 
     def test_get_index_automation_badge(self):
         cfg = DeviceConfig.get_solo()
@@ -194,9 +197,7 @@ class UploadViewTest(TestCase):
 
     def test_upload_image(self):
         png = _make_png()
-        uploaded = SimpleUploadedFile(
-            "test.png", png.read(), content_type="image/png"
-        )
+        uploaded = SimpleUploadedFile("test.png", png.read(), content_type="image/png")
         resp = self.client.post("/upload/", {"image": uploaded})
         self.assertEqual(resp.status_code, 302)
         self.assertEqual(EpaperImage.objects.count(), 1)
@@ -251,6 +252,40 @@ class CalendarViewTest(TestCase):
         DeviceConfig.get_solo()
         resp = self.client.post("/generate-calendar/")
         self.assertEqual(resp.status_code, 302)
+
+
+class GeneratePromptViewTest(TestCase):
+    def test_get_not_allowed(self):
+        resp = self.client.get("/generate-prompt/")
+        self.assertEqual(resp.status_code, 405)
+
+    @patch("epaper.views.requests.get")
+    @patch("epaper.views.Image.open")
+    def test_generate_prompt_success(self, mock_open, mock_get):
+        # Mock requests response
+        mock_resp = MagicMock()
+        mock_resp.content = b"fake_image_data"
+        mock_resp.raise_for_status = MagicMock()
+        mock_get.return_value = mock_resp
+
+        # Mock PIL Image
+        mock_img = MagicMock()
+        mock_img.convert.return_value = mock_img
+        mock_open.return_value = mock_img
+
+        resp = self.client.post(
+            "/generate-prompt/", {"prompt": "A beautiful landscape"}
+        )
+        self.assertEqual(resp.status_code, 302)
+        self.assertEqual(EpaperImage.objects.count(), 1)
+
+        # Verify img.save was called
+        self.assertTrue(mock_img.save.called)
+
+    def test_empty_prompt_redirects(self):
+        resp = self.client.post("/generate-prompt/", {"prompt": ""})
+        self.assertEqual(resp.status_code, 302)
+        self.assertEqual(EpaperImage.objects.count(), 0)
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -391,9 +426,7 @@ class EncodeImageTest(TestCase):
     def test_encode_floydsteinberg(self):
         img = Image.new("RGB", (250, 122), (128, 64, 64))
         tag = TagModel()
-        data = encode_image(
-            img, tag_model=tag, dithering=Dither.FLOYDSTEINBERG
-        )
+        data = encode_image(img, tag_model=tag, dithering=Dither.FLOYDSTEINBERG)
         self.assertGreater(len(data), 0)
 
     def test_encode_combined_dithering(self):
@@ -454,15 +487,11 @@ class ScreenWriterNotifyHandlerTest(TestCase):
 
     def test_handle_status_success(self):
         # Should not raise
-        ScreenWriter._handle_status(
-            bytes([0x02, 0x00]), "write screen request"
-        )
+        ScreenWriter._handle_status(bytes([0x02, 0x00]), "write screen request")
 
     def test_handle_status_error(self):
         with self.assertRaises(Exception) as ctx:
-            ScreenWriter._handle_status(
-                bytes([0x02, 0x01]), "write screen request"
-            )
+            ScreenWriter._handle_status(bytes([0x02, 0x01]), "write screen request")
         self.assertIn("Error", str(ctx.exception))
 
     def test_handle_block_size_assertion(self):
@@ -615,9 +644,7 @@ class ExtendedViewTests(TestCase):
 class IndexViewAutomationTest(TestCase):
     @patch("epaper.views.threading.Thread")
     @patch("epaper.views.set_automation_cron")
-    def test_post_enable_automation_triggers_thread(
-        self, mock_cron, mock_thread
-    ):
+    def test_post_enable_automation_triggers_thread(self, mock_cron, mock_thread):
         cfg = DeviceConfig.get_solo()
         cfg.automation_enabled = False
         cfg.save()
@@ -647,7 +674,9 @@ class IndexViewAutomationTest(TestCase):
         # Check that the target function is check_and_update_automation
         from epaper.automation import check_and_update_automation
 
-        self.assertEqual(mock_thread.call_args[1]["target"], check_and_update_automation)
+        self.assertEqual(
+            mock_thread.call_args[1]["target"], check_and_update_automation
+        )
         self.assertEqual(mock_thread.call_args[1]["daemon"], True)
 
 
@@ -655,13 +684,15 @@ class IndexViewAutomationTest(TestCase):
 class AsyncViewTests(IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
         from epaper.ble_logic import get_diagnostic_clients
+
         get_diagnostic_clients().clear()
 
     async def test_resolve_device_no_mac(self):
         # Additional defensive clear inside the test
         from epaper.ble_logic import get_diagnostic_clients
+
         get_diagnostic_clients().clear()
-        
+
         with patch("epaper.ble_logic.find_device") as mock_find:
             from epaper.ble_logic import resolve_device
             import queue
@@ -683,6 +714,7 @@ class AsyncViewTests(IsolatedAsyncioTestCase):
 
             # Ensure solo config exists
             from asgiref.sync import sync_to_async
+
             config = await sync_to_async(DeviceConfig.get_solo)()
             config.mac_address = "11:22:33:44:55:66"
             await sync_to_async(config.save)()
@@ -709,6 +741,7 @@ class AsyncViewTests(IsolatedAsyncioTestCase):
             from epaper.models import DeviceConfig
 
             from asgiref.sync import sync_to_async
+
             config = await sync_to_async(DeviceConfig.get_solo)()
             config.mac_address = "11:22:33:44:55:66"
             await sync_to_async(config.save)()
@@ -722,7 +755,7 @@ class AsyncViewTests(IsolatedAsyncioTestCase):
             mock_instance.__aenter__.return_value = mock_instance
             mock_instance.__aexit__.return_value = False
             mock_bleak.return_value = mock_instance
-            
+
             mock_instance.write_gatt_char = AsyncMock()
 
             resp = await send_cmd_view(request)
@@ -734,6 +767,7 @@ class AsyncViewTests(IsolatedAsyncioTestCase):
         from epaper.models import DeviceConfig
         from asgiref.sync import sync_to_async
         from epaper.ble_logic import get_diagnostic_clients
+
         get_diagnostic_clients().clear()
 
         # Ensure solo exists but mac is empty
@@ -788,9 +822,7 @@ class ScreenWriterDetailTest(IsolatedAsyncioTestCase):
         self.assertEqual(self.sw.block_size, 244)
 
         # Test 0x05 success (part request)
-        await self.sw.notify_handler(
-            None, bytes([0x05, 0x00, 0x01, 0x00, 0x00, 0x00])
-        )
+        await self.sw.notify_handler(None, bytes([0x05, 0x00, 0x01, 0x00, 0x00, 0x00]))
         part = await self.sw.transfer_queue.get()
         self.assertEqual(part, 1)
 
@@ -800,9 +832,7 @@ class ScreenWriterDetailTest(IsolatedAsyncioTestCase):
         self.assertIsNone(part)
 
         # Test status opcodes
-        await self.sw.notify_handler(
-            None, bytes([0x02, 0x00])
-        )  # success write
+        await self.sw.notify_handler(None, bytes([0x02, 0x00]))  # success write
         await self.sw.notify_handler(None, bytes([0x19]))
         await self.sw.notify_handler(None, bytes([0x40]))
         await self.sw.notify_handler(None, bytes([0x50]))
@@ -864,12 +894,8 @@ class AutomationTests(TestCase):
         mock_fetch.return_value = [
             {
                 "summary": "Busy Meeting",
-                "start": datetime.now(dt_timezone.utc).replace(
-                    hour=0, minute=0
-                ),
-                "end": datetime.now(dt_timezone.utc).replace(
-                    hour=23, minute=59
-                ),
+                "start": datetime.now(dt_timezone.utc).replace(hour=0, minute=0),
+                "end": datetime.now(dt_timezone.utc).replace(hour=23, minute=59),
                 "all_day": False,
             }
         ]
@@ -944,12 +970,8 @@ class AutomationTests(TestCase):
         mock_fetch.return_value = [
             {
                 "summary": "Meeting X",
-                "start": datetime.now(dt_timezone.utc).replace(
-                    hour=0, minute=0
-                ),
-                "end": datetime.now(dt_timezone.utc).replace(
-                    hour=23, minute=59
-                ),
+                "start": datetime.now(dt_timezone.utc).replace(hour=0, minute=0),
+                "end": datetime.now(dt_timezone.utc).replace(hour=23, minute=59),
                 "all_day": False,
             }
         ]
@@ -968,6 +990,7 @@ class AutomationTests(TestCase):
 
         # Simulate check_automation running
         from django.utils import timezone
+
         self.config.last_automation_time = timezone.now()
         self.config.save()
         response = self.client.get(reverse("automation_status"))
