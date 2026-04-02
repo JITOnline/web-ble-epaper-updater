@@ -45,12 +45,8 @@ def setup_logger(verbose=False):
 
 
 def parser():
-    parser = argparse.ArgumentParser(
-        description="Write an image to a Gicisky tag."
-    )
-    parser.add_argument(
-        "--image", type=str, help="Image to send.", required=True
-    )
+    parser = argparse.ArgumentParser(description="Write an image to a Gicisky tag.")
+    parser.add_argument("--image", type=str, help="Image to send.", required=True)
     parser.add_argument(
         "--address",
         type=str,

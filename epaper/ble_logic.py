@@ -35,9 +35,7 @@ async def resolve_device(config, msg_queue):
 
     # Pre-scan to "warm up" BlueZ cache
     msg_queue.put(f"Waking up connection for {mac_address}...")
-    device = await BleakScanner.find_device_by_address(
-        mac_address, timeout=5.0
-    )
+    device = await BleakScanner.find_device_by_address(mac_address, timeout=5.0)
     if not device:
         msg_queue.put(
             f"WARNING: Device {mac_address} not found in "
@@ -102,9 +100,7 @@ def prepare_image(image_obj, tag_model, config):
     return encode_image(img, tag_model=tag_model, dithering=dither_val)
 
 
-async def perform_update(
-    image_id, config, msg_queue, gicisky_logger, handler
-):
+async def perform_update(image_id, config, msg_queue, gicisky_logger, handler):
     """Perform the full image encode + BLE transfer sequence."""
     mac_address = config.mac_address
     try:
@@ -121,8 +117,7 @@ async def perform_update(
 
         await asyncio.sleep(0.5)
         msg_queue.put(
-            f"SUCCESS: Image successfully transferred "
-            f"to MAC {mac_address}!"
+            f"SUCCESS: Image successfully transferred " f"to MAC {mac_address}!"
         )
     except BleakDeviceNotFoundError:
         msg_queue.put(

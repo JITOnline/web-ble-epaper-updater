@@ -124,9 +124,7 @@ class ScreenWriter:
             await self._send_request([0x01])
         except Exception as e:
             if "0x0e" in str(e):
-                logger.warning(
-                    "Display is busy refreshing (0x0e - likely success)."
-                )
+                logger.warning("Display is busy refreshing (0x0e - likely success).")
             else:
                 logger.error(f"Failed to send refresh: {e}")
 
@@ -188,9 +186,7 @@ class ScreenWriter:
             if (self.device.mtu_size and self.device.mtu_size > 3)
             else 23
         )
-        mtu_payload_limit = (
-            mtu_val - 3
-        )  # max bytes we can write in one BLE message
+        mtu_payload_limit = mtu_val - 3  # max bytes we can write in one BLE message
 
         # The tag tells us its expected message size via CMD 01 response (typically 244).
         # Each message = 4 bytes part number + N bytes image data.
@@ -227,9 +223,7 @@ async def send_data_to_screen(address, image_data):
             try:
                 await device._backend._acquire_mtu()
             except Exception:
-                logger.debug(
-                    "MTU acquisition failed/unsupported. Using default."
-                )
+                logger.debug("MTU acquisition failed/unsupported. Using default.")
 
         logger.debug(f"Negotated MTU: {device.mtu_size}")
 

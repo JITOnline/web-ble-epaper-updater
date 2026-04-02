@@ -8,7 +8,7 @@ A Django-based web application for managing and updating Gicisky BLE e-paper dis
 | :------------------------------: | :-----------------------------------------------------------: |
 | ![E-Ink Display](docs/Display.jpg) | ![Main Dashboard](docs/Gicisky%20E-Ink%20BLE%20Configurator%201.png) |
 
-| Sidebar Settings (Part 1)        | Sidebar Settings (Part 2)        |
+| Settings 1 | Settings 2 |
 | :------------------------------: | :------------------------------: |
 | ![Settings 1](docs/Gicisky%20E-Ink%20BLE%20Configurator%202.png) | ![Settings 2](docs/Gicisky%20E-Ink%20BLE%20Configurator%203.png) |
 
@@ -29,8 +29,8 @@ A Django-based web application for managing and updating Gicisky BLE e-paper dis
 | **Bluetooth Reset**           | One-click `bluetoothctl` adapter power-cycling from the dashboard.                                                                                |
 | **Collapsible Sidebar**       | Click the Settings header to minimize the sidebar and maximize image viewing space.                                                              |
 | **BLE Error Handling**        | Real-time user feedback for Bluetooth issues like out-of-range tags or busy adapters.                                                            |
-| **Asynchronous Stability**    | Background threading for all BLE operations to prevent Gunicorn worker timeouts and ensure a responsive UI.                                      |
-| **Unit Testing**              | Comprehensive suite of 71 validated tests covering BLE logic, iCal parsing, image encoding, and dashboard views.                                 |
+| **AI Image Generation**    | Generate 800×480 grayscale images using natural language prompts (via Pollinations.ai).                                                  |
+| **Unit Testing**              | Comprehensive suite of 74 validated tests covering BLE logic, iCal parsing, image encoding, and dashboard views.                                 |
 
 ## Architecture & Requirements
 
@@ -202,6 +202,14 @@ The calendar renders:
 - **Red arrow** for the current time
 - **All-day events** in the header ribbon
 
+### AI Image Generation
+
+1. In the sidebar, locate the **AI Generation** section.
+2. Enter a natural language description (e.g. "a futuristic cyberpunk skyline in grayscale").
+3. Click **✨ Generate Image**.
+4. The app uses the **Pollinations.ai** API to generate an 800×480 image, converts it to grayscale, and adds it to your gallery.
+5. Click the gallery card to send it to your display.
+
 ### iCal Free/Busy Automation
 
 1. **Designate Images**: Upload two images to the gallery—one for when you are "Free" and one for when you are "Busy" (in a timed meeting). Note their card numbers (e.g., `#3`).
@@ -209,10 +217,10 @@ The calendar renders:
    - Provide your **iCal Feed URL**.
    - Select the respective images from the **"FREE" Image** and **"BUSY" Image** dropdowns (labeled with numbers).
    - Check **ACTIVE AUTOMATION** and click **Save Settings**.
-3. **Automated Scheduling**: The system automatically manages a **cron job** for the current user. 
-   - Enabling automation adds a `*/5 * * * *` check to your crontab.
-   - Disabling automation removes the entry.
-   - You can also run a manual one-shot check: `python3 manage.py check_automation`.
+3. **Automated Scheduling**:
+   - **Background Workers**: When enabled, the system spawns an initial background thread to update the display immediately without blocking the browser.
+   - **Persistence**: Enabling automation adds a `*/5 * * * *` background check to the system crontab (via `python-crontab`).
+   - **Diagnostic**: You can run a manual one-shot check anytime via `python3 manage.py check_automation`.
 
 **Status Reporting**:
 - A pulsing green **RUNNING** badge will appear in the sidebar next to the **iCal Automation** title when the feature is enabled.

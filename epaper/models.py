@@ -3,15 +3,11 @@ from django.core.exceptions import ValidationError
 
 
 class EpaperImage(models.Model):
-    image = models.ImageField(
-        upload_to="epaper_images/", null=True, blank=True
-    )
+    image = models.ImageField(upload_to="epaper_images/", null=True, blank=True)
     text_overlay = models.CharField(
         max_length=255,
         blank=True,
-        help_text=(
-            "Text to overlay on a blank canvas instead of uploading an image"
-        ),
+        help_text=("Text to overlay on a blank canvas instead of uploading an image"),
     )
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
@@ -39,9 +35,7 @@ class DeviceConfig(models.Model):
 
     rotate = models.BooleanField(default=False)
     negative = models.BooleanField(default=False)
-    dithering = models.CharField(
-        max_length=20, choices=DITHER_CHOICES, default="none"
-    )
+    dithering = models.CharField(max_length=20, choices=DITHER_CHOICES, default="none")
 
     # Forced logic from ATC_GICISKY
     force_compression = models.BooleanField(default=True)
@@ -85,9 +79,7 @@ class DeviceConfig(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.pk and DeviceConfig.objects.exists():
-            raise ValidationError(
-                "There can be only one DeviceConfig instance"
-            )
+            raise ValidationError("There can be only one DeviceConfig instance")
         return super().save(*args, **kwargs)
 
     @classmethod
