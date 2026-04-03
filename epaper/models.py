@@ -84,6 +84,7 @@ class DeviceConfig(models.Model):
     )
     pollinations_model = models.CharField(
         max_length=50,
+        blank=True,
         default="flux",
         choices=[
             ("kontext", "kontext"),
