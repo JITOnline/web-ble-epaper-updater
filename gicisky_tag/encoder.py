@@ -47,9 +47,9 @@ class Dither(Enum):
     Possible values:
     * NONE: no dithering, just choose the closest color for each pixel.
     * FLOYDSTEINBERG: quantize the image using Floyd-Steinberg dithering.
-    * COMBINED: quantize grayscale and red colors independently using Floyd-Steinberg dithering,
-        then combine them. This usually limits the usage of red to the areas where it is really
-        needed.
+    * COMBINED: quantize grayscale and red colors independently using
+        Floyd-Steinberg dithering, then combine them. This usually limits the
+        usage of red to the areas where it is really needed.
     """
 
     NONE = "none"
@@ -152,8 +152,8 @@ class TagModel:
         # case 9: 800x480
         # case 10: 480x280
 
-        # NOTE: The HTML seems to have width and height swapped compared to what we expect
-        # for a horizontal display. We use (width, height) as in PIL.
+        # NOTE: The HTML seems to have width and height swapped compared to
+        # what we expect for a horizontal display. We use (width, height) as in PIL.
         # But wait, the HTML says width=104, height=212 for case 0.
         # Let's use what the HTML says.
         res_map = {
@@ -179,12 +179,17 @@ class TagModel:
             # Let's check the raw_type bits again.
             # If screen_resolution is something else...
             logger.warning(
-                f"Unknown screen resolution: {screen_resolution}. Defaulting to 250x122."
+                f"Unknown screen resolution: {screen_resolution}. "
+                "Defaulting to 250x122."
             )
             self.width, self.height = 250, 122
 
     def __str__(self):
-        return f"TagModel({self.width}x{self.height}, color={self.color_type.name}, compression={self.use_compression})"
+        return (
+            f"TagModel({self.width}x{self.height}, "
+            f"color={self.color_type.name}, "
+            f"compression={self.use_compression})"
+        )
 
 
 def encode_image(image, tag_model=None, dithering=Dither.NONE, debug_folder=None):

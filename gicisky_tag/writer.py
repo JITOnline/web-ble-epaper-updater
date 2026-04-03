@@ -12,13 +12,14 @@ class ScreenWriter:
     Attrbutes:
     - device: The `BleakClient` instance to which the image will be sent.
     - image: The encoded image data, as a `bytes` object.
-    - block_size: The block size for the image transfer, as an `int` or `None` if not yet known.
+    - block_size: The block size for the image transfer, as an `int` or
+      `None` if not yet known.
     - transfer_queue:
-        An `asyncio.queues.Queue()` that will contain the data of the next image block to send, or `None` if the
-        transfer is complete.
+        An `asyncio.queues.Queue()` that will contain the data of the next
+        image block to send, or `None` if the transfer is complete.
     - notify_handler_results:
-        An `asyncio.queues.Queue()` that will contain `None` as soon as a notification is handled correctly, or an
-        exception if the handling failed.
+        An `asyncio.queues.Queue()` that will contain `None` as soon as a
+        notification is handled correctly, or an exception if the handling failed.
     """
 
     REQUEST_CHARACTERISTIC = "0000fef1-0000-1000-8000-00805f9b34fb"
@@ -37,7 +38,8 @@ class ScreenWriter:
         async def notify_handler_task(sender, data):
             try:
                 await self.notify_handler(sender, data)
-            # Here we catch all exceptions to avoid "Task exception was never retrieved" errors
+            # Here we catch all exceptions to avoid "Task exception was never
+            # retrieved" errors
             except Exception as e:
                 logger.error(f"Error in the notify handler: {e}")
                 await self.notify_handler_results.put(e)
@@ -188,11 +190,13 @@ class ScreenWriter:
         )
         mtu_payload_limit = mtu_val - 3  # max bytes we can write in one BLE message
 
-        # The tag tells us its expected message size via CMD 01 response (typically 244).
+        # The tag tells us its expected message size via CMD 01 response
+        # (typically 244).
         # Each message = 4 bytes part number + N bytes image data.
-        # CRITICAL: We MUST use the tag's block_size as the message size, because the tag
-        # calculates offsets as part_number * (block_size - 4). If we use a smaller size,
-        # every part after the first will be offset-shifted, causing garbled output.
+        # CRITICAL: We MUST use the tag's block_size as the message size, because
+        # the tag calculates offsets as part_number * (block_size - 4). If we
+        # use a smaller size, every part after the first will be offset-shifted,
+        # causing garbled output.
         hw_block_size = self.block_size if self.block_size else 244
         message_size = min(mtu_payload_limit, hw_block_size)
 

@@ -50,7 +50,7 @@
 
             <div class="prompt-section" style="margin-top: 1rem; margin-bottom: 2rem; padding: 1rem; border: 1px solid var(--glass-border); border-radius: 12px; background: rgba(255,255,255,0.05);">
                 <h3 style="margin-top: 0; margin-bottom: 0.5rem; font-size: 1rem; color: #fff;">AI Generation</h3>
-                <form method="post" action="{% url 'generate_prompt' %}">
+                <form method="post" action="{% url 'generate_prompt' %}" onsubmit="this.querySelector('button').disabled=true; this.querySelector('button').textContent='✨ Generating...';">
                     {% csrf_token %}
                     <div class="form-group" style="margin-bottom: 0.5rem;">
                         <input type="text" name="prompt" placeholder="A grayscale landscape..." required style="width: 100%; box-sizing: border-box; padding: 0.5rem; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(0,0,0,0.2); color: white;" />
@@ -134,6 +134,17 @@
                     <div class="form-group">
                         <label for="id_ical_busy_image">"BUSY" Image</label>
                         {{ config_form.ical_busy_image }}
+                    </div>
+                </div>
+                
+                <div class="ai-settings-section" style="margin-top: 1.5rem; padding: 1rem; border: 1px solid var(--glass-border); border-radius: 12px; background: rgba(255,255,255,0.05);">
+                    <h3 style="margin:0; margin-bottom: 1rem; font-size: 1rem; color: #fff;">AI Image Settings</h3>
+                    <div class="form-group">
+                        <label for="id_pollinations_api_key">Pollinations API Key</label>
+                        {{ config_form.pollinations_api_key }}
+                        <small style="display: block; margin-top: 0.4rem; color: rgba(255,255,255,0.5); font-size: 0.7rem;">
+                            Optional: Bearer token for gen.pollinations.ai
+                        </small>
                     </div>
                 </div>
                 
