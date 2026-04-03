@@ -205,10 +205,12 @@ The calendar renders:
 
 ### AI Image Generation
 
-1. In the sidebar, locate the **AI Generation** section.
-2. Enter a natural language description (e.g. "a futuristic cyberpunk skyline in grayscale").
-3. Click **✨ Generate Image**.
-4. The app uses the **Pollinations.ai** API to generate an 800×480 image, converts it to grayscale, and adds it to your gallery.
+1. **Configure API Key (Optional)**: In the **AI Image Settings** section of the sidebar, you can provide a **Pollinations.ai API Key** (Bearer token).
+   - If provided, the app uses the `gen.pollinations.ai` endpoint with your token as a Bearer header.
+   - If left empty, it falls back to the public `image.pollinations.ai` endpoint.
+2. **Generate**: In the sidebar **AI Generation** section, enter a natural language description (e.g. "a futuristic cyberpunk skyline in grayscale").
+3. Click **✨ Generate Image**. The button will disable and show a "Generating..." state while the image is being created and downloaded.
+4. The app converts the resulting 800×480 image to grayscale and adds it to your gallery.
 5. Click the gallery card to send it to your display.
 
 ### iCal Free/Busy Automation
@@ -249,10 +251,11 @@ The calendar renders:
 | **Width/Height Override**| Force a custom resolution instead of auto-detected.                                    |
 | **Force Compress**       | Enable/disable RLE compression in the data stream.                                     |
 | **Force BWR**            | Force black/white/red encoding even if the tag reports BW-only.                        |
-| **Force Mirror**         | Mirror the image horizontally (required by some display types).                         |
+| **Force Mirror**         | Mirror the image horizontally (required by some display types).                        |
 | **iCal Feed URL**        | URL for calendar image generation and automation.                                      |
 | **Automation Active**    | Toggle the background iCal free/busy check.                                             |
 | **Free/Busy Images**     | Select gallery images for each calendar state.                                         |
+| **Pollinations API Key** | Optional Bearer token for premium `gen.pollinations.ai` image generation.               |
 
 ---
 

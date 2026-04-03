@@ -259,25 +259,22 @@ class GeneratePromptViewTest(TestCase):
         resp = self.client.get("/generate-prompt/")
         self.assertEqual(resp.status_code, 405)
 
-    @patch("epaper.views.requests.get")
-    @patch("epaper.views.Image.open")
-    def test_generate_prompt_success(self, mock_open, mock_get):
-        # Mock requests response
-        mock_resp = MagicMock()
-        mock_resp.content = b"fake_image_data"
-        mock_resp.raise_for_status = MagicMock()
-        mock_get.return_value = mock_resp
-
+    @patch("epaper.views.generate_ai_image")
+    def test_generate_prompt_success(self, mock_generate):
         # Mock PIL Image
         mock_img = MagicMock()
-        mock_img.convert.return_value = mock_img
-        mock_open.return_value = mock_img
+        mock_img.save = MagicMock()
+        mock_generate.return_value = mock_img
 
         resp = self.client.post(
             "/generate-prompt/", {"prompt": "A beautiful landscape"}
         )
         self.assertEqual(resp.status_code, 302)
         self.assertEqual(EpaperImage.objects.count(), 1)
+
+        # Verify mock_generate was called with the correct prompt
+        mock_generate.assert_called_once()
+        self.assertEqual(mock_generate.call_args[0][0], "A beautiful landscape")
 
         # Verify img.save was called
         self.assertTrue(mock_img.save.called)

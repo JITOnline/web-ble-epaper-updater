@@ -76,6 +76,12 @@ class DeviceConfig(models.Model):
         blank=True,
     )
     last_automation_time = models.DateTimeField(null=True, blank=True)
+    pollinations_api_key = models.CharField(
+        max_length=255,
+        blank=True,
+        default="",
+        help_text="API Key for pollinations.ai image generation",
+    )
 
     def save(self, *args, **kwargs):
         if not self.pk and DeviceConfig.objects.exists():

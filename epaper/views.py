@@ -29,9 +29,7 @@ from .automation import (
     check_and_update_automation,
 )
 
-import urllib.parse
-import requests
-from PIL import Image
+from .ai_image import generate_ai_image
 
 logger = logging.getLogger(__name__)
 
@@ -286,7 +284,10 @@ async def connect_device_view(request):
             return JsonResponse(
                 {
                     "status": "success",
-                    "message": f"Connected to {mac_address}. Session active. Verified with CMD 01.",
+                    "message": (
+                        f"Connected to {mac_address}. Session active. "
+                        "Verified with CMD 01."
+                    ),
                 }
             )
     except Exception as e:
@@ -419,17 +420,10 @@ def generate_prompt_view(request):
         messages.error(request, "Prompt cannot be empty.")
         return redirect("index")
 
+    config = DeviceConfig.get_solo()
     try:
+        img = generate_ai_image(prompt, api_key=config.pollinations_api_key)
 
-        v_prompt = urllib.parse.quote(prompt)
-        url = (
-            f"https://image.pollinations.ai/prompt/{v_prompt}"
-            "?width=800&height=480&nologo=true"
-        )
-        response = requests.get(url, timeout=120)
-        response.raise_for_status()
-
-        img = Image.open(BytesIO(response.content)).convert("L")
         buf = BytesIO()
         img.save(buf, format="PNG")
         buf.seek(0)

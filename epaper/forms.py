@@ -48,6 +48,12 @@ class DeviceConfigForm(forms.ModelForm):
             ),
             "ical_free_image": forms.Select(attrs={"class": "select-input"}),
             "ical_busy_image": forms.Select(attrs={"class": "select-input"}),
+            "pollinations_api_key": forms.TextInput(
+                attrs={
+                    "class": "text-input",
+                    "placeholder": "Optional: pollinations.ai bearer token",
+                }
+            ),
         }
 
     def __init__(self, *args, **kwargs):
