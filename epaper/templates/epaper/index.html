@@ -53,7 +53,7 @@
                 <form method="post" action="{% url 'generate_prompt' %}" onsubmit="this.querySelector('button').disabled=true; this.querySelector('button').textContent='✨ Generating...';">
                     {% csrf_token %}
                     <div class="form-group" style="margin-bottom: 0.5rem;">
-                        <input type="text" name="prompt" placeholder="A grayscale landscape..." required style="width: 100%; box-sizing: border-box; padding: 0.5rem; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(0,0,0,0.2); color: white;" />
+                        <input type="text" name="prompt" placeholder="A grayscale landscape..." value="{{ last_failed_prompt }}" required style="width: 100%; box-sizing: border-box; padding: 0.5rem; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(0,0,0,0.2); color: white;" />
                     </div>
                     <button type="submit" class="btn secondary" style="width: 100%; margin: 0;">
                         <span class="cal-icon">✨</span> Generate Image
