@@ -89,6 +89,7 @@ def index_view(request):
         "upload_form": upload_form,
         "images": images_list[::-1],  # Newest first in view
         "automation_alert": request.session.pop("automation_alert", None),
+        "last_failed_prompt": request.session.pop("last_failed_prompt", ""),
     }
     return render(request, "epaper/index.html", context)
 
@@ -441,6 +442,7 @@ def generate_prompt_view(request):
         )
     except Exception as e:
         messages.error(request, f"Failed to generate prompt image: {e}")
+        request.session["last_failed_prompt"] = prompt
 
     return redirect("index")
 

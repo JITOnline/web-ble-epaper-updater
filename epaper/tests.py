@@ -291,6 +291,16 @@ class GeneratePromptViewTest(TestCase):
         self.assertEqual(resp.status_code, 302)
         self.assertEqual(EpaperImage.objects.count(), 0)
 
+    @patch("epaper.views.generate_ai_image")
+    def test_generate_prompt_failure_stores_prompt(self, mock_generate):
+        mock_generate.side_effect = Exception("API error")
+        resp = self.client.post(
+            "/generate-prompt/", {"prompt": "Failed prompt"}
+        )
+        self.assertEqual(resp.status_code, 302)
+        # Check that it's in the session
+        self.assertEqual(self.client.session["last_failed_prompt"], "Failed prompt")
+
 
 class AiImageGenerationTest(TestCase):
     @patch("epaper.ai_image.requests.get")
