@@ -82,6 +82,41 @@ class DeviceConfig(models.Model):
         default="",
         help_text="API Key for pollinations.ai image generation",
     )
+    pollinations_model = models.CharField(
+        max_length=50,
+        default="flux",
+        choices=[
+            ("kontext", "kontext"),
+            ("nanobanana", "nanobanana"),
+            ("nanobanana-2", "nanobanana-2"),
+            ("nanobanana-pro", "nanobanana-pro"),
+            ("seedream5", "seedream5"),
+            ("seedream", "seedream"),
+            ("seedream-pro", "seedream-pro"),
+            ("gptimage", "gptimage"),
+            ("gptimage-large", "gptimage-large"),
+            ("flux", "flux"),
+            ("zimage", "zimage"),
+            ("veo", "veo"),
+            ("seedance", "seedance"),
+            ("seedance-pro", "seedance-pro"),
+            ("wan", "wan"),
+            ("wan-fast", "wan-fast"),
+            ("wan-image", "wan-image"),
+            ("wan-image-pro", "wan-image-pro"),
+            ("qwen-image", "qwen-image"),
+            ("grok-imagine", "grok-imagine"),
+            ("grok-imagine-pro", "grok-imagine-pro"),
+            ("grok-video-pro", "grok-video-pro"),
+            ("klein", "klein"),
+            ("ltx-2", "ltx-2"),
+            ("p-image", "p-image"),
+            ("p-image-edit", "p-image-edit"),
+            ("p-video", "p-video"),
+            ("nova-canvas", "nova-canvas"),
+            ("nova-reel", "nova-reel"),
+        ],
+    )
 
     def save(self, *args, **kwargs):
         if not self.pk and DeviceConfig.objects.exists():

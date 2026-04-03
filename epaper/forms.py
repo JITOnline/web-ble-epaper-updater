@@ -54,6 +54,7 @@ class DeviceConfigForm(forms.ModelForm):
                     "placeholder": "Optional: pollinations.ai bearer token",
                 }
             ),
+            "pollinations_model": forms.Select(attrs={"class": "select-input"}),
         }
 
     def __init__(self, *args, **kwargs):

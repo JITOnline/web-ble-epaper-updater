@@ -7,7 +7,9 @@ from PIL import Image
 logger = logging.getLogger(__name__)
 
 
-def generate_ai_image(prompt, api_key=None, width=800, height=480):
+def generate_ai_image(
+    prompt, api_key=None, width=800, height=480, model="flux"
+):
     """
     Generates an image based on a prompt using pollinations.ai.
     If an api_key is provided, it uses the gen.pollinations.ai endpoint
@@ -21,7 +23,7 @@ def generate_ai_image(prompt, api_key=None, width=800, height=480):
         # Use the newer/paid endpoint if api_key is provided
         url = (
             f"https://gen.pollinations.ai/image/{v_prompt}"
-            f"?width={width}&height={height}&nologo=true"
+            f"?width={width}&height={height}&nologo=true&model={model}"
         )
         headers = {"Authorization": f"Bearer {api_key}"}
         logger.debug(f"Calling gen.pollinations.ai for prompt: {prompt}")
@@ -29,7 +31,7 @@ def generate_ai_image(prompt, api_key=None, width=800, height=480):
         # Fallback to the public endpoint
         url = (
             f"https://image.pollinations.ai/prompt/{v_prompt}"
-            f"?width={width}&height={height}&nologo=true"
+            f"?width={width}&height={height}&nologo=true&model={model}"
         )
         headers = {}
         logger.debug(f"Calling image.pollinations.ai for prompt: {prompt}")

@@ -422,7 +422,11 @@ def generate_prompt_view(request):
 
     config = DeviceConfig.get_solo()
     try:
-        img = generate_ai_image(prompt, api_key=config.pollinations_api_key)
+        img = generate_ai_image(
+            prompt,
+            api_key=config.pollinations_api_key,
+            model=config.pollinations_model,
+        )
 
         buf = BytesIO()
         img.save(buf, format="PNG")

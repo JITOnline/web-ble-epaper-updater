@@ -253,9 +253,10 @@ The calendar renders:
 | **Force BWR**            | Force black/white/red encoding even if the tag reports BW-only.                        |
 | **Force Mirror**         | Mirror the image horizontally (required by some display types).                        |
 | **iCal Feed URL**        | URL for calendar image generation and automation.                                      |
-| **Automation Active**    | Toggle the background iCal free/busy check.                                             |
+| **Automation Active**    | Toggle the background iCal free/busy check.                                            |
 | **Free/Busy Images**     | Select gallery images for each calendar state.                                         |
-| **Pollinations API Key** | Optional Bearer token for premium `gen.pollinations.ai` image generation.               |
+| **Pollinations API Key** | Optional Bearer token for premium `gen.pollinations.ai` image generation.              |
+| **Pollinations Model**   | AI model to use for image generation (e.g., `flux`, `gptimage`, `veo`).                |
 
 ---
 
