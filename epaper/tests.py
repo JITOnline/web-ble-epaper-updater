@@ -261,6 +261,10 @@ class GeneratePromptViewTest(TestCase):
 
     @patch("epaper.views.generate_ai_image")
     def test_generate_prompt_success(self, mock_generate):
+        config = DeviceConfig.get_solo()
+        config.pollinations_model = "gptimage"
+        config.save()
+
         # Mock PIL Image
         mock_img = MagicMock()
         mock_img.save = MagicMock()
@@ -272,9 +276,12 @@ class GeneratePromptViewTest(TestCase):
         self.assertEqual(resp.status_code, 302)
         self.assertEqual(EpaperImage.objects.count(), 1)
 
-        # Verify mock_generate was called with the correct prompt
-        mock_generate.assert_called_once()
-        self.assertEqual(mock_generate.call_args[0][0], "A beautiful landscape")
+        # Verify mock_generate was called with the correct prompt and model
+        mock_generate.assert_called_once_with(
+            "A beautiful landscape",
+            api_key=config.pollinations_api_key,
+            model="gptimage",
+        )
 
         # Verify img.save was called
         self.assertTrue(mock_img.save.called)
@@ -283,6 +290,60 @@ class GeneratePromptViewTest(TestCase):
         resp = self.client.post("/generate-prompt/", {"prompt": ""})
         self.assertEqual(resp.status_code, 302)
         self.assertEqual(EpaperImage.objects.count(), 0)
+
+
+class AiImageGenerationTest(TestCase):
+    @patch("epaper.ai_image.requests.get")
+    def test_generate_ai_image_public(self, mock_get):
+        # Mock a successful image response
+        mock_response = MagicMock()
+        mock_response.content = b"fake-image-bytes"
+        mock_response.headers = {"Content-Type": "image/png"}
+        mock_get.return_value = mock_response
+
+        # Use a real PIL image open mock to avoid actual processing
+        with patch("epaper.ai_image.Image.open") as mock_open:
+            mock_img = MagicMock()
+            mock_open.return_value = mock_img
+            # Convert("L") returns another mock
+            mock_img.convert.return_value = mock_img
+
+            from epaper.ai_image import generate_ai_image
+
+            result = generate_ai_image("test prompt", model="flux")
+
+            self.assertEqual(result, mock_img)
+            # Check URL for public endpoint
+            url = mock_get.call_args[0][0]
+            self.assertIn("image.pollinations.ai", url)
+            self.assertIn("model=flux", url)
+
+    @patch("epaper.ai_image.requests.get")
+    def test_generate_ai_image_authenticated(self, mock_get):
+        # Mock a successful image response
+        mock_response = MagicMock()
+        mock_response.content = b"fake-image-bytes"
+        mock_response.headers = {"Content-Type": "image/png"}
+        mock_get.return_value = mock_response
+
+        with patch("epaper.ai_image.Image.open") as mock_open:
+            mock_img = MagicMock()
+            mock_open.return_value = mock_img
+            mock_img.convert.return_value = mock_img
+
+            from epaper.ai_image import generate_ai_image
+
+            result = generate_ai_image(
+                "test prompt", api_key="test-key", model="flux"
+            )
+
+            self.assertEqual(result, mock_img)
+            # Check URL and Headers for authenticated endpoint
+            url = mock_get.call_args[0][0]
+            headers = mock_get.call_args[1]["headers"]
+            self.assertIn("gen.pollinations.ai", url)
+            self.assertIn("model=flux", url)
+            self.assertEqual(headers["Authorization"], "Bearer test-key")
 
 
 # ══════════════════════════════════════════════════════════════════
