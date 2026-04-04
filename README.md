@@ -239,6 +239,12 @@ The calendar renders:
    - **🔄 Reset Bluetooth** — power-cycle the host Bluetooth adapter (`bluetoothctl power off/on`).
 3. Check **Detailed Output** for verbose `gicisky_tag` library logging during transfers.
 
+## Troubleshooting
+
+- **Connection Failed**: If you see "Device not found" during a test or update, wait a few seconds and try again. The application now performs an automatic 10-second pre-scan to wake up the system Bluetooth cache, but interference can sometimes require a second attempt.
+- **Reset Bluetooth**: Use the "Reset Bluetooth" button in the dashboard to power-cycle the Chromebook's Bluetooth adapter if the connection becomes consistently unresponsive.
+- **Pollinations API**: If AI image generation fails, ensure your API Key is correct and has sufficient credits if using premium models. Free models typically work without a key using the public endpoint.
+
 ### Device Configuration
 
 | Setting                  | Purpose                                                                                |

@@ -206,7 +206,16 @@ async def send_cmd_view(request):
                 mac_address = device_info["address"]
 
             cmd_bytes = bytes.fromhex(cmd_hex)
-            async with BleakClient(mac_address) as device:
+
+            from bleak import BleakScanner
+
+            device_obj = await BleakScanner.find_device_by_address(
+                mac_address, timeout=10.0
+            )
+            if not device_obj:
+                raise Exception(f"Device with address {mac_address} was not found.")
+
+            async with BleakClient(device_obj) as device:
                 await device.write_gatt_char(
                     "0000fef1-0000-1000-8000-00805f9b34fb",
                     cmd_bytes,
@@ -273,7 +282,15 @@ async def connect_device_view(request):
                 else:
                     diag_clients.pop(mac_address)
 
-            client = BleakClient(mac_address)
+            from bleak import BleakScanner
+
+            device_obj = await BleakScanner.find_device_by_address(
+                mac_address, timeout=10.0
+            )
+            if not device_obj:
+                raise Exception(f"Device with address {mac_address} was not found.")
+
+            client = BleakClient(device_obj)
             await client.connect()
             diag_clients[mac_address] = client
 

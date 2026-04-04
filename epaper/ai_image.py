@@ -7,9 +7,7 @@ from PIL import Image
 logger = logging.getLogger(__name__)
 
 
-def generate_ai_image(
-    prompt, api_key=None, width=800, height=480, model="flux"
-):
+def generate_ai_image(prompt, api_key=None, width=800, height=480, model="flux"):
     """
     Generates an image based on a prompt using pollinations.ai.
     If an api_key is provided, it uses the gen.pollinations.ai endpoint
