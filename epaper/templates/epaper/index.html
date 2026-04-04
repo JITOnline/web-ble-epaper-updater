@@ -296,7 +296,8 @@
         function logDebug(msg) {
             const logger = document.getElementById('debug-log');
             const time = new Date().toISOString().split('T')[1].split('.')[0];
-            logger.innerHTML += `<br>[${time}] ${msg}`;
+            const formattedMsg = String(msg).replace(/\n/g, '<br>&nbsp;&nbsp;');
+            logger.innerHTML += `<br>[${time}] ${formattedMsg}`;
             logger.scrollTop = logger.scrollHeight;
         }
 

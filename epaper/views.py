@@ -184,31 +184,37 @@ async def _find_device_robust(mac_address, timeout=10.0, detailed_debug=False):
     """
     from bleak import BleakScanner
 
+    import traceback
     if detailed_debug:
         logger.info(f"[DEBUG] Robust Search for {mac_address} (Timeout: {timeout}s)")
-
-    # 1. Try targeted scan
-    device_obj = await BleakScanner.find_device_by_address(mac_address, timeout=timeout)
+    
+    # 1. Try targeted scan with active mode
+    scanner_kwargs = {"scanning_mode": "active"}
+    device_obj = await BleakScanner.find_device_by_address(
+        mac_address, timeout=timeout, **scanner_kwargs
+    )
     if device_obj:
         if detailed_debug:
             logger.info(f"[DEBUG] Found {mac_address} via targeted scan.")
         return device_obj
 
     if detailed_debug:
-        logger.info(
-            f"[DEBUG] Targeted scan failed for {mac_address}. Trying full discovery..."
-        )
+        logger.info(f"[DEBUG] Targeted scan failed for {mac_address}. Trying full discovery...")
 
-    # 2. Try full discovery (sometimes more reliable on BlueZ)
-    devices = await BleakScanner.discover(timeout=timeout)
-    for d in devices:
-        if detailed_debug:
-            logger.info(f"[DEBUG] Discovered: {d.address} ({d.name or 'Unknown'})")
-        if d.address.upper() == mac_address.upper():
+    # 2. Try full discovery with active mode
+    try:
+        devices = await BleakScanner.discover(timeout=timeout, **scanner_kwargs)
+        for d in devices:
             if detailed_debug:
-                logger.info(f"[DEBUG] Match found in full discovery: {d.address}")
-            return d
-
+                logger.info(f"[DEBUG] Discovered: {d.address} ({d.name or 'Unknown'})")
+            if d.address.upper() == mac_address.upper():
+                if detailed_debug:
+                    logger.info(f"[DEBUG] Match found in full discovery: {d.address}")
+                return d
+    except Exception as e:
+        if detailed_debug:
+            logger.error(f"[DEBUG] Discovery error: {traceback.format_exc()}")
+            
     return None
 
 
@@ -272,7 +278,12 @@ async def send_cmd_view(request):
                 status=400,
             )
         except Exception as e:
-            return JsonResponse({"status": "error", "message": str(e)}, status=400)
+            detailed_debug = request.GET.get("debug") == "1"
+            msg = str(e)
+            if detailed_debug:
+                import traceback
+                msg = f"{msg}\n{traceback.format_exc()}"
+            return JsonResponse({"status": "error", "message": msg}, status=400)
     return JsonResponse({"status": "error"}, status=405)
 
 
@@ -353,8 +364,13 @@ async def connect_device_view(request):
                 }
             )
     except Exception as e:
+        detailed_debug = request.GET.get("debug") == "1"
+        msg = str(e)
+        if detailed_debug:
+            import traceback
+            msg = f"{msg}\n{traceback.format_exc()}"
         return JsonResponse(
-            {"status": "error", "message": f"Connection failed: {str(e)}"},
+            {"status": "error", "message": f"Connection failed: {msg}"},
             status=400,
         )
 
