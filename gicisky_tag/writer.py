@@ -226,7 +226,7 @@ async def send_data_to_screen(address, image_data):
         device_obj = address
 
     logger.info(f"Connecting to {address}...")
-    async with BleakClient(device_obj) as device:
+    async with BleakClient(device_obj, timeout=30.0) as device:
         # Give the service discovery and internal stack time to settle
         await asyncio.sleep(1.0)
 
