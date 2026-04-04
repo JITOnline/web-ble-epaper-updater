@@ -185,6 +185,7 @@ async def _find_device_robust(mac_address, timeout=10.0, detailed_debug=False):
     from bleak import BleakScanner
 
     import traceback
+    import subprocess
     if detailed_debug:
         logger.info(f"[DEBUG] Robust Search for {mac_address} (Timeout: {timeout}s)")
     
@@ -215,6 +216,27 @@ async def _find_device_robust(mac_address, timeout=10.0, detailed_debug=False):
         if detailed_debug:
             logger.error(f"[DEBUG] Discovery error: {traceback.format_exc()}")
             
+    # 3. Fallback: Force BlueZ to recognize the device using bluetoothctl
+    if detailed_debug:
+        logger.info(f"[DEBUG] Bleak failed to find {mac_address}. Trying bluetoothctl fallback...")
+    try:
+        # Run a brief scan using bluetoothctl to populate D-Bus
+        subprocess.run(["bluetoothctl", "--timeout", "5", "scan", "on"], capture_output=True)
+        # Check if D-Bus now knows about it
+        info = subprocess.run(["bluetoothctl", "info", mac_address], capture_output=True, text=True)
+        if detailed_debug:
+            logger.info(f"[DEBUG] bluetoothctl info returned: {info.stdout.strip()}")
+            
+        # Give Bleak one last chance now that D-Bus might have it
+        device_obj = await BleakScanner.find_device_by_address(mac_address, timeout=3.0)
+        if device_obj:
+            if detailed_debug:
+                logger.info(f"[DEBUG] Found {mac_address} after bluetoothctl scan.")
+            return device_obj
+    except Exception as e:
+        if detailed_debug:
+            logger.error(f"[DEBUG] bluetoothctl fallback error: {str(e)}")
+
     return None
 
 
