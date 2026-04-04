@@ -304,7 +304,8 @@
             const cmd = document.getElementById('debug-cmd').value;
             if(!cmd) return;
             logDebug(`-> Sending: ${cmd}`);
-            fetch('/send-cmd/', {
+            const isDetailed = document.getElementById('detailed-debug-toggle').checked ? '1' : '0';
+            fetch(`/send-cmd/?debug=${isDetailed}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -322,7 +323,8 @@
         function connectDevice() {
             const mac = document.getElementById('id_mac_address')?.value;
             logDebug(`-> Attempting connection & test to ${mac || 'configured device'}...`);
-            fetch('/connect/', {
+            const isDetailed = document.getElementById('detailed-debug-toggle').checked ? '1' : '0';
+            fetch(`/connect/?debug=${isDetailed}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

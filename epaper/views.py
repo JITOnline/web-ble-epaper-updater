@@ -177,6 +177,41 @@ def trigger_update_view(request, image_id):
     )
 
 
+async def _find_device_robust(mac_address, timeout=10.0, detailed_debug=False):
+    """
+    Highly robust way to find a BLE device on Linux/BlueZ.
+    Tries targeted scan, then full discovery.
+    """
+    from bleak import BleakScanner
+
+    if detailed_debug:
+        logger.info(f"[DEBUG] Robust Search for {mac_address} (Timeout: {timeout}s)")
+
+    # 1. Try targeted scan
+    device_obj = await BleakScanner.find_device_by_address(mac_address, timeout=timeout)
+    if device_obj:
+        if detailed_debug:
+            logger.info(f"[DEBUG] Found {mac_address} via targeted scan.")
+        return device_obj
+
+    if detailed_debug:
+        logger.info(
+            f"[DEBUG] Targeted scan failed for {mac_address}. Trying full discovery..."
+        )
+
+    # 2. Try full discovery (sometimes more reliable on BlueZ)
+    devices = await BleakScanner.discover(timeout=timeout)
+    for d in devices:
+        if detailed_debug:
+            logger.info(f"[DEBUG] Discovered: {d.address} ({d.name or 'Unknown'})")
+        if d.address.upper() == mac_address.upper():
+            if detailed_debug:
+                logger.info(f"[DEBUG] Match found in full discovery: {d.address}")
+            return d
+
+    return None
+
+
 async def send_cmd_view(request):
     if request.method == "POST":
         try:
@@ -207,13 +242,17 @@ async def send_cmd_view(request):
 
             cmd_bytes = bytes.fromhex(cmd_hex)
 
-            from bleak import BleakScanner
-
-            device_obj = await BleakScanner.find_device_by_address(
-                mac_address, timeout=10.0
+            detailed_debug = request.GET.get("debug") == "1"
+            device_obj = await _find_device_robust(
+                mac_address, detailed_debug=detailed_debug
             )
             if not device_obj:
-                raise Exception(f"Device with address {mac_address} was not found.")
+                # One last attempt: direct address connect anyway
+                logger.warning(
+                    f"Device {mac_address} not found in scan."
+                    " Attempting direct connect..."
+                )
+                device_obj = mac_address
 
             async with BleakClient(device_obj) as device:
                 await device.write_gatt_char(
@@ -282,13 +321,18 @@ async def connect_device_view(request):
                 else:
                     diag_clients.pop(mac_address)
 
-            from bleak import BleakScanner
-
-            device_obj = await BleakScanner.find_device_by_address(
-                mac_address, timeout=10.0
+            detailed_debug = request.GET.get("debug") == "1"
+            device_obj = await _find_device_robust(
+                mac_address, detailed_debug=detailed_debug
             )
             if not device_obj:
-                raise Exception(f"Device with address {mac_address} was not found.")
+                # One last attempt: direct address connect anyway
+                if detailed_debug:
+                    logger.info(
+                        f"[DEBUG] Device not seen in scan. "
+                        f"Forcing direct connect to {mac_address}..."
+                    )
+                device_obj = mac_address
 
             client = BleakClient(device_obj)
             await client.connect()

@@ -220,7 +220,10 @@ async def send_data_to_screen(address, image_data):
     logger.info(f"Scanning for {address}...")
     device_obj = await BleakScanner.find_device_by_address(address, timeout=10.0)
     if not device_obj:
-        raise Exception(f"Device with address {address} was not found.")
+        logger.warning(
+            f"Device {address} not seen in scan. Attempting direct connection anyway..."
+        )
+        device_obj = address
 
     logger.info(f"Connecting to {address}...")
     async with BleakClient(device_obj) as device:
