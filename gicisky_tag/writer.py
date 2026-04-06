@@ -1,7 +1,7 @@
 import math
 import asyncio
 import logging
-from bleak import BleakClient
+from bleak import BleakClient, BleakScanner
 from gicisky_tag.log import logger
 
 
@@ -217,8 +217,16 @@ class ScreenWriter:
 
 
 async def send_data_to_screen(address, image_data):
+    logger.info(f"Scanning for {address}...")
+    device_obj = await BleakScanner.find_device_by_address(address, timeout=10.0)
+    if not device_obj:
+        logger.warning(
+            f"Device {address} not seen in scan. Attempting direct connection anyway..."
+        )
+        device_obj = address
+
     logger.info(f"Connecting to {address}...")
-    async with BleakClient(address) as device:
+    async with BleakClient(device_obj, timeout=30.0) as device:
         # Give the service discovery and internal stack time to settle
         await asyncio.sleep(1.0)
 

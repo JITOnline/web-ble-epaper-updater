@@ -6,13 +6,46 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('epaper', '0008_alter_deviceconfig_pollinations_model'),
+        ("epaper", "0008_alter_deviceconfig_pollinations_model"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='deviceconfig',
-            name='pollinations_model',
-            field=models.CharField(blank=True, choices=[('kontext', 'kontext [Paid]'), ('nanobanana', 'nanobanana [Paid]'), ('nanobanana-2', 'nanobanana-2 [Paid]'), ('nanobanana-pro', 'nanobanana-pro [Paid]'), ('seedream5', 'seedream5 [Paid]'), ('gptimage', 'gptimage [Free]'), ('gptimage-large', 'gptimage-large [Paid]'), ('flux', 'flux [Free]'), ('zimage', 'zimage [Free]'), ('veo', 'veo [Paid]'), ('seedance', 'seedance [Paid]'), ('seedance-pro', 'seedance-pro [Paid]'), ('wan', 'wan [Paid]'), ('wan-fast', 'wan-fast [Paid]'), ('wan-image', 'wan-image [Free]'), ('wan-image-pro', 'wan-image-pro [Paid]'), ('qwen-image', 'qwen-image [Free]'), ('grok-imagine', 'grok-imagine [Paid]'), ('grok-imagine-pro', 'grok-imagine-pro [Paid]'), ('grok-video-pro', 'grok-video-pro [Paid]'), ('klein', 'klein [Free]'), ('ltx-2', 'ltx-2 [Free]'), ('p-image', 'p-image [Paid]'), ('p-image-edit', 'p-image-edit [Paid]'), ('p-video', 'p-video [Paid]'), ('nova-canvas', 'nova-canvas [Paid]'), ('nova-reel', 'nova-reel [Free]')], default='flux', max_length=50),
+            model_name="deviceconfig",
+            name="pollinations_model",
+            field=models.CharField(
+                blank=True,
+                choices=[
+                    ("kontext", "kontext [Paid]"),
+                    ("nanobanana", "nanobanana [Paid]"),
+                    ("nanobanana-2", "nanobanana-2 [Paid]"),
+                    ("nanobanana-pro", "nanobanana-pro [Paid]"),
+                    ("seedream5", "seedream5 [Paid]"),
+                    ("gptimage", "gptimage [Free]"),
+                    ("gptimage-large", "gptimage-large [Paid]"),
+                    ("flux", "flux [Free]"),
+                    ("zimage", "zimage [Free]"),
+                    ("veo", "veo [Paid]"),
+                    ("seedance", "seedance [Paid]"),
+                    ("seedance-pro", "seedance-pro [Paid]"),
+                    ("wan", "wan [Paid]"),
+                    ("wan-fast", "wan-fast [Paid]"),
+                    ("wan-image", "wan-image [Free]"),
+                    ("wan-image-pro", "wan-image-pro [Paid]"),
+                    ("qwen-image", "qwen-image [Free]"),
+                    ("grok-imagine", "grok-imagine [Paid]"),
+                    ("grok-imagine-pro", "grok-imagine-pro [Paid]"),
+                    ("grok-video-pro", "grok-video-pro [Paid]"),
+                    ("klein", "klein [Free]"),
+                    ("ltx-2", "ltx-2 [Free]"),
+                    ("p-image", "p-image [Paid]"),
+                    ("p-image-edit", "p-image-edit [Paid]"),
+                    ("p-video", "p-video [Paid]"),
+                    ("nova-canvas", "nova-canvas [Paid]"),
+                    ("nova-reel", "nova-reel [Free]"),
+                ],
+                default="flux",
+                max_length=50,
+            ),
         ),
     ]

@@ -294,9 +294,7 @@ class GeneratePromptViewTest(TestCase):
     @patch("epaper.views.generate_ai_image")
     def test_generate_prompt_failure_stores_prompt(self, mock_generate):
         mock_generate.side_effect = Exception("API error")
-        resp = self.client.post(
-            "/generate-prompt/", {"prompt": "Failed prompt"}
-        )
+        resp = self.client.post("/generate-prompt/", {"prompt": "Failed prompt"})
         self.assertEqual(resp.status_code, 302)
         # Check that it's in the session
         self.assertEqual(self.client.session["last_failed_prompt"], "Failed prompt")
@@ -343,9 +341,7 @@ class AiImageGenerationTest(TestCase):
 
             from epaper.ai_image import generate_ai_image
 
-            result = generate_ai_image(
-                "test prompt", api_key="test-key", model="flux"
-            )
+            result = generate_ai_image("test prompt", api_key="test-key", model="flux")
 
             self.assertEqual(result, mock_img)
             # Check URL and Headers for authenticated endpoint
@@ -799,7 +795,13 @@ class AsyncViewTests(IsolatedAsyncioTestCase):
             mock_instance.write_gatt_char = AsyncMock()
             mock_instance.is_connected = True
 
-            resp = await connect_device_view(request)
+            # Mock BleakScanner
+            with patch(
+                "bleak.BleakScanner.find_device_by_address", new_callable=AsyncMock
+            ) as mock_find:
+                mock_find.return_value = MagicMock()
+
+                resp = await connect_device_view(request)
             self.assertEqual(resp.status_code, 200, resp.content)
             self.assertIn(b"Connected", resp.content)
 
@@ -826,7 +828,13 @@ class AsyncViewTests(IsolatedAsyncioTestCase):
 
             mock_instance.write_gatt_char = AsyncMock()
 
-            resp = await send_cmd_view(request)
+            # Mock BleakScanner
+            with patch(
+                "bleak.BleakScanner.find_device_by_address", new_callable=AsyncMock
+            ) as mock_find:
+                mock_find.return_value = MagicMock()
+
+                resp = await send_cmd_view(request)
             self.assertEqual(resp.status_code, 200, resp.content)
             self.assertIn(b"Successfully sent", resp.content)
 

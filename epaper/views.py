@@ -177,6 +177,78 @@ def trigger_update_view(request, image_id):
     )
 
 
+async def _find_device_robust(mac_address, timeout=10.0, detailed_debug=False):
+    """
+    Highly robust way to find a BLE device on Linux/BlueZ.
+    Tries targeted scan, then full discovery.
+    """
+    from bleak import BleakScanner
+
+    import traceback
+    import subprocess
+
+    if detailed_debug:
+        logger.info(f"[DEBUG] Robust Search for {mac_address} (Timeout: {timeout}s)")
+
+    # 1. Try targeted scan with active mode
+    scanner_kwargs = {"scanning_mode": "active"}
+    device_obj = await BleakScanner.find_device_by_address(
+        mac_address, timeout=timeout, **scanner_kwargs
+    )
+    if device_obj:
+        if detailed_debug:
+            logger.info(f"[DEBUG] Found {mac_address} via targeted scan.")
+        return device_obj
+
+    if detailed_debug:
+        logger.info(
+            f"[DEBUG] Targeted scan failed for {mac_address}. Trying full discovery..."
+        )
+
+    # 2. Try full discovery with active mode
+    try:
+        devices = await BleakScanner.discover(timeout=timeout, **scanner_kwargs)
+        for d in devices:
+            if detailed_debug:
+                logger.info(f"[DEBUG] Discovered: {d.address} ({d.name or 'Unknown'})")
+            if d.address.upper() == mac_address.upper():
+                if detailed_debug:
+                    logger.info(f"[DEBUG] Match found in full discovery: {d.address}")
+                return d
+    except Exception as e:
+        if detailed_debug:
+            logger.error(f"[DEBUG] Discovery error: {traceback.format_exc()}")
+
+    # 3. Fallback: Force BlueZ to recognize the device using bluetoothctl
+    if detailed_debug:
+        logger.info(
+            f"[DEBUG] Bleak failed to find {mac_address}. Trying bluetoothctl fallback..."
+        )
+    try:
+        # Run a brief scan using bluetoothctl to populate D-Bus
+        subprocess.run(
+            ["bluetoothctl", "--timeout", "5", "scan", "on"], capture_output=True
+        )
+        # Check if D-Bus now knows about it
+        info = subprocess.run(
+            ["bluetoothctl", "info", mac_address], capture_output=True, text=True
+        )
+        if detailed_debug:
+            logger.info(f"[DEBUG] bluetoothctl info returned: {info.stdout.strip()}")
+
+        # Give Bleak one last chance now that D-Bus might have it
+        device_obj = await BleakScanner.find_device_by_address(mac_address, timeout=3.0)
+        if device_obj:
+            if detailed_debug:
+                logger.info(f"[DEBUG] Found {mac_address} after bluetoothctl scan.")
+            return device_obj
+    except Exception as e:
+        if detailed_debug:
+            logger.error(f"[DEBUG] bluetoothctl fallback error: {str(e)}")
+
+    return None
+
+
 async def send_cmd_view(request):
     if request.method == "POST":
         try:
@@ -206,7 +278,20 @@ async def send_cmd_view(request):
                 mac_address = device_info["address"]
 
             cmd_bytes = bytes.fromhex(cmd_hex)
-            async with BleakClient(mac_address) as device:
+
+            detailed_debug = request.GET.get("debug") == "1"
+            device_obj = await _find_device_robust(
+                mac_address, detailed_debug=detailed_debug
+            )
+            if not device_obj:
+                # One last attempt: direct address connect anyway
+                logger.warning(
+                    f"Device {mac_address} not found in scan."
+                    " Attempting direct connect..."
+                )
+                device_obj = mac_address
+
+            async with BleakClient(device_obj, timeout=30.0) as device:
                 await device.write_gatt_char(
                     "0000fef1-0000-1000-8000-00805f9b34fb",
                     cmd_bytes,
@@ -224,7 +309,13 @@ async def send_cmd_view(request):
                 status=400,
             )
         except Exception as e:
-            return JsonResponse({"status": "error", "message": str(e)}, status=400)
+            detailed_debug = request.GET.get("debug") == "1"
+            msg = str(e)
+            if detailed_debug:
+                import traceback
+
+                msg = f"{msg}\n{traceback.format_exc()}"
+            return JsonResponse({"status": "error", "message": msg}, status=400)
     return JsonResponse({"status": "error"}, status=405)
 
 
@@ -273,7 +364,20 @@ async def connect_device_view(request):
                 else:
                     diag_clients.pop(mac_address)
 
-            client = BleakClient(mac_address)
+            detailed_debug = request.GET.get("debug") == "1"
+            device_obj = await _find_device_robust(
+                mac_address, detailed_debug=detailed_debug
+            )
+            if not device_obj:
+                # One last attempt: direct address connect anyway
+                if detailed_debug:
+                    logger.info(
+                        f"[DEBUG] Device not seen in scan. "
+                        f"Forcing direct connect to {mac_address}..."
+                    )
+                device_obj = mac_address
+
+            client = BleakClient(device_obj, timeout=30.0)
             await client.connect()
             diag_clients[mac_address] = client
 
@@ -292,8 +396,14 @@ async def connect_device_view(request):
                 }
             )
     except Exception as e:
+        detailed_debug = request.GET.get("debug") == "1"
+        msg = str(e)
+        if detailed_debug:
+            import traceback
+
+            msg = f"{msg}\n{traceback.format_exc()}"
         return JsonResponse(
-            {"status": "error", "message": f"Connection failed: {str(e)}"},
+            {"status": "error", "message": f"Connection failed: {msg}"},
             status=400,
         )
 
