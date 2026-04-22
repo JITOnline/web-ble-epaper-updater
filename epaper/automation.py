@@ -72,7 +72,8 @@ def check_and_update_automation():
 
         next_str = ""
         if next_change:
-            next_str = f" | Next update: {next_change.strftime('%H:%M')}"
+            mins_left = max(0, int((next_change - now).total_seconds() / 60))
+            next_str = f" | Next update: {next_change.strftime('%H:%M')} (in {mins_left}m)"
 
         logger.info(f"Automation {state_str}{next_str}")
 
@@ -131,7 +132,7 @@ def set_automation_cron(enabled=True):
             # Get path to manage.py
             cur_file = os.path.abspath(__file__)
             # epaper/automation.py -> epaper -> web-ble-epaper-updater
-            base_dir = os.path.dirname(os.path.dirname(os.path.dirname(cur_file)))
+            base_dir = os.path.dirname(os.path.dirname(cur_file))
             manage_py = os.path.join(base_dir, "manage.py")
             python_bin = sys.executable
 

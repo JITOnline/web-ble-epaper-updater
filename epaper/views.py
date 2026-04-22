@@ -595,10 +595,12 @@ def automation_status_view(request):
 
         next_str = ""
         if is_busy and busy_event:
-            next_str = f"Next change at: {busy_event['end'].strftime('%H:%M')}"
+            mins_left = max(0, int((busy_event['end'] - now).total_seconds() / 60))
+            next_str = f"Next change at: {busy_event['end'].strftime('%H:%M')} (in {mins_left}m)"
         elif next_event:
             next_time = next_event['start'] - timedelta(minutes=2)
-            next_str = f"Next event at: {next_time.strftime('%H:%M')}"
+            mins_left = max(0, int((next_time - now).total_seconds() / 60))
+            next_str = f"Next event at: {next_time.strftime('%H:%M')} (in {mins_left}m)"
 
         last_str = ""
         if config.last_automation_time:
