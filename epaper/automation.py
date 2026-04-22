@@ -24,6 +24,11 @@ class DummyQueue:
 
 def check_and_update_automation():
     """Sync iCal status and update the e-paper if needed."""
+    from django.conf import settings
+
+    if getattr(settings, "DEBUG", False):
+        logger.info("Executing check_and_update_automation cronjob.")
+
     config = DeviceConfig.get_solo()
     if not config.automation_enabled or not config.ical_url:
         return
