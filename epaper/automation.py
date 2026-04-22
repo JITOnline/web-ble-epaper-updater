@@ -86,7 +86,9 @@ def check_and_update_automation():
             return
 
         if config.last_automation_image == target_image:
-            # Already set, skip update
+            # Already set, skip update but track the check time
+            config.last_automation_time = now
+            config.save()
             return
 
         logger.info(f"Automation: Change detected. New target image: {target_image}")
@@ -133,7 +135,7 @@ def set_automation_cron(enabled=True):
             manage_py = os.path.join(base_dir, "manage.py")
             python_bin = sys.executable
 
-            command = f"{python_bin} {manage_py} check_automation"
+            command = f"cd {base_dir} && {python_bin} {manage_py} check_automation"
             job = cron.new(command=command, comment=comment)
             job.minute.every(1)
             cron.write()
