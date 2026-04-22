@@ -13,8 +13,8 @@ class Command(BaseCommand):
         parser.add_argument(
             "--interval",
             type=int,
-            default=300,
-            help="Interval in seconds between checks (default: 300)",
+            default=60,
+            help="Interval in seconds between checks (default: 60)",
         )
 
     def handle(self, *args, **options):

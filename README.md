@@ -239,6 +239,7 @@ The calendar renders:
    - **Disconnect** — tear down the diagnostic connection.
    - **🔄 Reset Bluetooth** — power-cycle the host Bluetooth adapter (`bluetoothctl power off/on`).
 3. Check **Detailed Output** for verbose `gicisky_tag` library logging during transfers.
+4. **Log File**: All diagnostic outputs, Bluetooth transfer logs, and automation checks are also continuously written to `epaper-updater.log` in the project root directory.
 
 ## Troubleshooting
 
