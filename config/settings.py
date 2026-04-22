@@ -176,3 +176,6 @@ LOGGING = {
         },
     },
 }
+
+# The interval in minutes for the automation cron job to run
+AUTOMATION_CRON_INTERVAL = int(os.getenv("AUTOMATION_CRON_INTERVAL", 5))

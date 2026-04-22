@@ -138,9 +138,13 @@ def set_automation_cron(enabled=True):
 
             command = f"cd {base_dir} && {python_bin} {manage_py} check_automation"
             job = cron.new(command=command, comment=comment)
-            job.minute.every(1)
+            
+            from django.conf import settings
+            interval = getattr(settings, "AUTOMATION_CRON_INTERVAL", 1)
+            job.minute.every(interval)
+            
             cron.write()
-            logger.info("Automation cron job enabled (every 1 min).")
+            logger.info(f"Automation cron job enabled (every {interval} min).")
         else:
             cron.write()
             logger.info("Automation cron job disabled.")
