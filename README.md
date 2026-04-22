@@ -222,7 +222,8 @@ The calendar renders:
    - Check **ACTIVE AUTOMATION** and click **Save Settings**.
 3. **Automated Scheduling**:
    - **Background Workers**: When enabled, the system spawns an initial background thread to update the display immediately without blocking the browser.
-   - **Persistence**: Enabling automation adds a `*/5 * * * *` background check to the system crontab (via `python-crontab`).
+   - **Persistence**: Enabling automation adds a `* * * * *` (every minute) background check to the system crontab (via `python-crontab`).
+   - **Timing**: The "Busy" image will be displayed 2 minutes prior to the actual start time of any timed calendar event. The "Free" image will be restored when the event ends.
    - **Diagnostic**: You can run a manual one-shot check anytime via `python3 manage.py check_automation`.
 
 **Status Reporting**:

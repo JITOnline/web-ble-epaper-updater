@@ -1,7 +1,7 @@
 import os
 import sys
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from dateutil import tz as dateutil_tz
 from crontab import CronTab
 from .models import DeviceConfig
@@ -42,11 +42,12 @@ def check_and_update_automation():
         next_event = None
 
         for ev in timed_events:
-            if ev["start"] <= now <= ev["end"]:
+            start_threshold = ev["start"] - timedelta(minutes=2)
+            if start_threshold <= now <= ev["end"]:
                 is_busy = True
                 busy_event = ev
-            elif ev["start"] > now:
-                if next_event is None or ev["start"] < next_event["start"]:
+            elif start_threshold > now:
+                if next_event is None or start_threshold < (next_event["start"] - timedelta(minutes=2)):
                     next_event = ev
 
         target_image = config.ical_busy_image if is_busy else config.ical_free_image
@@ -60,7 +61,7 @@ def check_and_update_automation():
         if is_busy and busy_event:
             next_change = busy_event["end"]
         elif next_event:
-            next_change = next_event["start"]
+            next_change = next_event["start"] - timedelta(minutes=2)
         else:
             next_change = None
 
@@ -129,9 +130,9 @@ def set_automation_cron(enabled=True):
 
             command = f"{python_bin} {manage_py} check_automation"
             job = cron.new(command=command, comment=comment)
-            job.minute.every(5)
+            job.minute.every(1)
             cron.write()
-            logger.info("Automation cron job enabled (every 5 mins).")
+            logger.info("Automation cron job enabled (every 1 min).")
         else:
             cron.write()
             logger.info("Automation cron job disabled.")

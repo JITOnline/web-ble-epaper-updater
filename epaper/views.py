@@ -579,12 +579,14 @@ def automation_status_view(request):
         is_busy = False
         busy_event = None
         next_event = None
+        from datetime import timedelta
         for ev in timed_events:
-            if ev["start"] <= now <= ev["end"]:
+            start_threshold = ev["start"] - timedelta(minutes=2)
+            if start_threshold <= now <= ev["end"]:
                 is_busy = True
                 busy_event = ev
-            elif ev["start"] > now:
-                if next_event is None or ev["start"] < next_event["start"]:
+            elif start_threshold > now:
+                if next_event is None or start_threshold < (next_event["start"] - timedelta(minutes=2)):
                     next_event = ev
 
         state_str = f"[{'BUSY' if is_busy else 'FREE'}]"
@@ -595,7 +597,8 @@ def automation_status_view(request):
         if is_busy and busy_event:
             next_str = f"Next change at: {busy_event['end'].strftime('%H:%M')}"
         elif next_event:
-            next_str = f"Next event at: {next_event['start'].strftime('%H:%M')}"
+            next_time = next_event['start'] - timedelta(minutes=2)
+            next_str = f"Next event at: {next_time.strftime('%H:%M')}"
 
         last_str = ""
         if config.last_automation_time:
