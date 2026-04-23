@@ -1,7 +1,7 @@
 import os
 import sys
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from dateutil import tz as dateutil_tz
 from crontab import CronTab
 from .models import DeviceConfig
@@ -24,6 +24,11 @@ class DummyQueue:
 
 def check_and_update_automation():
     """Sync iCal status and update the e-paper if needed."""
+    from django.conf import settings
+
+    if getattr(settings, "DEBUG", False):
+        logger.info("Executing check_and_update_automation cronjob.")
+
     config = DeviceConfig.get_solo()
     if not config.automation_enabled or not config.ical_url:
         return
@@ -42,11 +47,12 @@ def check_and_update_automation():
         next_event = None
 
         for ev in timed_events:
-            if ev["start"] <= now <= ev["end"]:
+            start_threshold = ev["start"] - timedelta(minutes=2)
+            if start_threshold <= now <= ev["end"]:
                 is_busy = True
                 busy_event = ev
-            elif ev["start"] > now:
-                if next_event is None or ev["start"] < next_event["start"]:
+            elif start_threshold > now:
+                if next_event is None or start_threshold < (next_event["start"] - timedelta(minutes=2)):
                     next_event = ev
 
         target_image = config.ical_busy_image if is_busy else config.ical_free_image
@@ -60,13 +66,14 @@ def check_and_update_automation():
         if is_busy and busy_event:
             next_change = busy_event["end"]
         elif next_event:
-            next_change = next_event["start"]
+            next_change = next_event["start"] - timedelta(minutes=2)
         else:
             next_change = None
 
         next_str = ""
         if next_change:
-            next_str = f" | Next update: {next_change.strftime('%H:%M')}"
+            mins_left = max(0, int((next_change - now).total_seconds() / 60))
+            next_str = f" | Next update: {next_change.strftime('%H:%M')} (in {mins_left}m)"
 
         logger.info(f"Automation {state_str}{next_str}")
 
@@ -80,7 +87,9 @@ def check_and_update_automation():
             return
 
         if config.last_automation_image == target_image:
-            # Already set, skip update
+            # Already set, skip update but track the check time
+            config.last_automation_time = now
+            config.save()
             return
 
         logger.info(f"Automation: Change detected. New target image: {target_image}")
@@ -123,15 +132,19 @@ def set_automation_cron(enabled=True):
             # Get path to manage.py
             cur_file = os.path.abspath(__file__)
             # epaper/automation.py -> epaper -> web-ble-epaper-updater
-            base_dir = os.path.dirname(os.path.dirname(os.path.dirname(cur_file)))
+            base_dir = os.path.dirname(os.path.dirname(cur_file))
             manage_py = os.path.join(base_dir, "manage.py")
             python_bin = sys.executable
 
-            command = f"{python_bin} {manage_py} check_automation"
+            command = f"cd {base_dir} && {python_bin} {manage_py} check_automation"
             job = cron.new(command=command, comment=comment)
-            job.minute.every(5)
+            
+            from django.conf import settings
+            interval = getattr(settings, "AUTOMATION_CRON_INTERVAL", 1)
+            job.minute.every(interval)
+            
             cron.write()
-            logger.info("Automation cron job enabled (every 5 mins).")
+            logger.info(f"Automation cron job enabled (every {interval} min).")
         else:
             cron.write()
             logger.info("Automation cron job disabled.")

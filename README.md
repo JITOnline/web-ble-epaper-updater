@@ -222,7 +222,8 @@ The calendar renders:
    - Check **ACTIVE AUTOMATION** and click **Save Settings**.
 3. **Automated Scheduling**:
    - **Background Workers**: When enabled, the system spawns an initial background thread to update the display immediately without blocking the browser.
-   - **Persistence**: Enabling automation adds a `*/5 * * * *` background check to the system crontab (via `python-crontab`).
+   - **Persistence**: Enabling automation adds a `*/5 * * * *` (every 5 minutes) background check to the system crontab. This interval can be customized by changing the `AUTOMATION_CRON_INTERVAL` (in minutes) inside `config/settings.py`.
+   - **Timing**: The "Busy" image will be displayed 2 minutes prior to the actual start time of any timed calendar event. The "Free" image will be restored when the event ends.
    - **Diagnostic**: You can run a manual one-shot check anytime via `python3 manage.py check_automation`.
 
 **Status Reporting**:
@@ -238,6 +239,7 @@ The calendar renders:
    - **Disconnect** — tear down the diagnostic connection.
    - **🔄 Reset Bluetooth** — power-cycle the host Bluetooth adapter (`bluetoothctl power off/on`).
 3. Check **Detailed Output** for verbose `gicisky_tag` library logging during transfers.
+4. **Log File**: All diagnostic outputs, Bluetooth transfer logs, and automation checks are also continuously written to `epaper-updater.log` in the project root directory.
 
 ## Troubleshooting
 
